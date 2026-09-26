@@ -1,0 +1,21 @@
+{
+  "defaults": { "quality": "high", "size": "1536x1024" },
+  "images": [
+    {
+      "out": "assets/bg-structure.png",
+      "prompt": "Post-modern sci-fi megastructure seen from below, brutalist graphic design poster aesthetic, near-black background with off-white planes, thin technical line art, halftone dot fields, acid lime (#C6FF00) and hot pink (#FF2E88) accent blocks, flat geometric planes, strong perspective, lots of negative space, no text, no letters, no logos"
+    },
+    {
+      "out": "assets/runner.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Flat vector graphic-design character, full-body front-facing sci-fi runner, thick black outlines, solid flat color blocks only, off-white base with saturated acid lime (#C6FF00) and hot pink (#FF2E88) panels, halftone dots and diagonal stripe patterns, bold number 01 on chest, faceless visor helmet, no gradients, no realistic shading, no metal texture, no glow, arms relaxed at sides, feet at the bottom edge, transparent background, no logos"
+    },
+    {
+      "out": "assets/core.png",
+      "size": "1024x1024",
+      "transparent": true,
+      "prompt": "Floating abstract technological core object, layered translucent geometric plates and wireframe rings, acid lime and hot pink glow on off-white and black, graphic design sci-fi aesthetic, isolated object centered, transparent background, no text"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Graph demo — 数据化节点</title>
+  <link rel="stylesheet" href="../../engine/base.css">
+  <style>
+    .dot { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); margin: -13px 0 0 -13px; }
+    .hud { position: absolute; left: 80px; bottom: 80px; font: 700 64px/1 var(--mono, monospace); color: #fff; }
+    .runner { position: absolute; right: 120px; bottom: 0; }
+  </style>
+</head>
+<body>
+<script type="module">
+  import { createVideo, Space3D, MeshPuppet } from '../../engine/index.js';
+
+  // The whole scene is data: this object could live in scene.json.
+  const graphJSON = {
+    items: [
+      // CHOP-like channel: a beat envelope everything else can reference.
+      { kind: 'node', id: 'beat', type: 'channel', params: {
+        v: { value: 0, fx: [{ type: 'pulse', bpm: 120, amp: 1, decay: 6 }] },
+        sweep: { keys: [[0, 0], [8, 1, 'inOutCubic']] },
+      } },
+      // Cavalry-style duplicator: 12×6 DOM dots on a grid, radial falloff follows the sweep.
+      { kind: 'node', id: 'dots', type: 'duplicator', parent: '@stage', html: '<div class="dot"></div>', count: 72,
+        distribution: { type: 'grid', cols: 12, spacing: [120, 90], center: [960, 400] },
+        falloff: { type: 'radial', center: { expr: '[lerp(300, 1620, ch("beat.sweep")), 400]' }, radius: 360, soft: 0.6 },
+        params: {
+          scale: { value: 1.6, fx: [{ type: 'falloff', rest: 0.25 }], expr: 'value * (1 + ch("beat.v") * 0.4 * w)' },
+          opacity: { value: 1, fx: [{ type: 'falloff', rest: 0.2 }] },
+          y: { expr: 'sin(t * 3 + i * 0.4) * 10 * w' },
+        } },
+      // 3D objects are nodes too: route ring driven by the same channels.
+      { kind: 'node', id: 'ring', type: 'object', target: '@ring', params: {
+        ry: { expr: 't * 30' }, s: { value: 1, expr: 'value + ch("beat.v") * 0.15' }, progress: { link: 'beat.sweep' },
+      } },
+      { kind: 'node', id: 'runner', type: 'object', target: '@runner.params', params: {
+        nod: { link: 'beat.v', mul: 4 }, headX: { value: 0, fx: [{ type: 'oscillate', amp: 0.4, freq: 0.25 }] },
+      } },
+      { kind: 'op', op: 'counter', target: '.hud', params: { at: 0.5, from: 0, to: 42195, dur: 6, sfx: null } },
+      { kind: 'preset', preset: 'wobble', target: '.hud', params: { amp: 2, freq: 0.8 } },
+    ],
+  };
+
+  const runner = new MeshPuppet({ src: '../marathon/assets/runner.svg', width: 360, height: 540, headLine: 0.28 });
+  await createVideo({
+    width: 1920, height: 1080, fps: 30,
+    theme: { accent: '#c6ff00' },
+    ready: [runner.ready],
+    scenes: [{
+      id: 'graph', title: '节点图', dur: 8, className: 'bg-grad',
+      html: `<div class="hud">0</div>`,
+      build(tl, el) {
+        const sp = new Space3D(el, { fov: 900 });
+        const ring = sp.add(Space3D.ring(260, 120, { color: '#ff2e88', width: 3, y: 120, rx: 70, progress: 0 }));
+        sp.bind(tl);
+        runner.el.classList.add('runner'); el.appendChild(runner.el); tl.add((lt) => runner.update(lt));
+        tl.graph({ root: el, stage: el, refs: { stage: el, ring, runner } }).add(graphJSON.items);
+      },
+    }],
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="900" viewBox="0 0 600 900">
+  <!-- Placeholder mascot. Replace with a GPT-image transparent PNG (see assets.json). -->
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6ee7ff"/><stop offset="1" stop-color="#3b82f6"/></linearGradient>
+    <linearGradient id="h" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a78bfa"/><stop offset="1" stop-color="#7c3aed"/></linearGradient>
+  </defs>
+  <path d="M150 880 C150 600 190 470 300 470 C410 470 450 600 450 880 Z" fill="url(#b)"/>
+  <rect x="265" y="400" width="70" height="90" rx="30" fill="#ffe0cc"/>
+  <circle cx="300" cy="260" r="170" fill="#ffe8d9"/>
+  <path d="M120 260 C110 90 220 40 300 40 C400 40 500 100 480 280 C450 180 380 150 300 160 C220 150 160 190 120 260 Z" fill="url(#h)"/>
+  <ellipse cx="235" cy="280" rx="22" ry="30" fill="#1e1b4b"/>
+  <ellipse cx="365" cy="280" rx="22" ry="30" fill="#1e1b4b"/>
+  <circle cx="243" cy="268" r="8" fill="#fff"/><circle cx="373" cy="268" r="8" fill="#fff"/>
+  <ellipse cx="200" cy="335" rx="26" ry="14" fill="#fda4af" opacity=".6"/>
+  <ellipse cx="400" cy="335" rx="26" ry="14" fill="#fda4af" opacity=".6"/>
+  <path d="M270 350 Q300 378 330 350" stroke="#9f1239" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <circle cx="300" cy="640" r="46" fill="#fff" opacity=".9"/>
+  <path d="M282 640 l14 14 l24 -28" stroke="#3b82f6" stroke-width="10" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

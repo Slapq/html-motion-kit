@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Graph showcase — 节点图全部功能</title>
+  <link rel="stylesheet" href="../../engine/base.css">
+  <style>
+    .h { position: absolute; left: 80px; top: 56px; margin: 0; font-size: 56px; font-weight: 800; }
+    .h small { font-size: 26px; color: var(--muted); font-weight: 500; margin-left: 20px; }
+    .mono { font-family: var(--mono); }
+    /* scene 1: param spec catalogue */
+    .row { position: absolute; left: 80px; width: 1760px; height: 60px; }
+    .row code { position: absolute; left: 0; top: 16px; width: 700px; font: 17px/1.3 var(--mono); color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .row code b { color: var(--accent); font-weight: 700; margin-right: 10px; }
+    .row .track { position: absolute; left: 740px; right: 60px; top: 29px; height: 2px; background: #1f2a3a; }
+    .ball { position: absolute; left: 740px; top: 16px; width: 28px; height: 28px; margin-left: -14px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 18px var(--accent); }
+    .beatdot { position: absolute; right: 90px; top: 72px; width: 36px; height: 36px; border-radius: 50%; background: #ff2e88; }
+    /* scene 2: duplicators */
+    .panel { position: absolute; width: 580px; height: 400px; border-radius: 18px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.08); overflow: hidden; }
+    .panel p { position: absolute; left: 18px; bottom: 12px; margin: 0; font: 18px var(--mono); color: var(--muted); z-index: 2; }
+    .d { width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--accent); }
+    .bar { width: 6px; height: 36px; margin: -18px 0 0 -3px; border-radius: 3px; background: #ff2e88; }
+    .d.pink { background: #ff2e88; }
+    /* scene 3: 3D + puppet */
+    .runner { position: absolute; right: 90px; bottom: 0; z-index: 3; }
+    .hud3 { position: absolute; left: 80px; bottom: 70px; font: 24px/1.6 var(--mono); color: #cbd5e1; white-space: pre; z-index: 4; }
+    /* scene 4: operators & presets */
+    .t4 { position: absolute; left: 0; right: 0; top: 70px; text-align: center; font-size: 84px; font-weight: 800; margin: 0; }
+    .sub4 { position: absolute; left: 0; right: 0; top: 190px; text-align: center; font-size: 38px; color: var(--muted); margin: 0; }
+    .num { position: absolute; left: 160px; top: 330px; font: 800 120px/1 var(--mono); color: var(--accent); }
+    .tw { position: absolute; left: 160px; top: 500px; width: 900px; font: 34px/1.4 var(--mono); color: #e2e8f0; }
+    .sc { position: absolute; left: 160px; top: 600px; font: 34px var(--mono); color: #ff2e88; }
+    .chips { position: absolute; left: 160px; top: 760px; display: flex; gap: 22px; }
+    .chip { padding: 14px 26px; border-radius: 999px; background: #1c2433; border: 1px solid #2f3a4f; font: 26px var(--mono); }
+    .orbit-c { position: absolute; left: 1480px; top: 520px; width: 0; height: 0; }
+    .orbit-c::before { content: ''; position: absolute; left: -160px; top: -160px; width: 320px; height: 320px; border-radius: 50%; border: 1px dashed #334155; }
+    .orb { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%; background: #ff2e88; }
+    /* scene 5: traceability */
+    .t5 { position: absolute; left: 80px; top: 150px; font-size: 44px; font-weight: 800; margin: 0; }
+    .json { position: absolute; left: 80px; top: 240px; width: 700px; height: 420px; margin: 0; padding: 20px; box-sizing: border-box; overflow: hidden;
+      font: 15px/1.45 var(--mono); color: #94a3b8; background: rgba(255,255,255,.04); border-radius: 14px; white-space: pre; }
+    .stats5 { position: absolute; left: 80px; top: 690px; width: 700px; font: 22px/1.7 var(--mono); color: #cbd5e1; white-space: pre; }
+    .cv5 { position: absolute; left: 840px; top: 170px; }
+    .t6 { position: absolute; left: 0; right: 0; top: 420px; text-align: center; font-size: 96px; font-weight: 800; margin: 0; z-index: 3; }
+    .sub6 { position: absolute; left: 0; right: 0; top: 560px; text-align: center; font: 30px var(--mono); color: #e2e8f0; margin: 0; z-index: 3; }
+    .legend { position: absolute; left: 840px; top: 760px; width: 1000px; font: 20px/1.7 var(--mono); color: #cbd5e1; white-space: pre; }
+  </style>
+</head>
+<body>
+<script type="module">
+  import {
+    createVideo, Space3D, MeshPuppet, Graph, clamp, ShaderLayer, registerEnvelope,
+    defineOp, definePreset, registerBehaviour, registerDistribution, registerFalloff,
+  } from '../../engine/index.js';
+
+  // ---------------------------------------------------------------- extensions (registries)
+  registerBehaviour('hop', (v, c, o) => v - Math.abs(Math.sin((c.t * (o.freq ?? 1) - c.i * (o.offset ?? 0)) * Math.PI)) * (o.amp ?? 10));
+  registerDistribution('heart', (o, n) => {
+    const [cx, cy] = o.center ?? [0, 0], k = o.size ?? 10;
+    return Array.from({ length: n }, (_, i) => {
+      const a = (i / n) * Math.PI * 2;
+      return { px: cx + 16 * Math.sin(a) ** 3 * k, py: cy - (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) * k, pz: 0 };
+    });
+  });
+  registerFalloff('ring', (o, c, E) => {
+    const [cx, cy] = E(o.center, [0, 0]), r = E(o.radius, 100);
+    return clamp(1 - Math.abs(Math.hypot(c.px - cx, c.py - cy) - r) / E(o.width, 40));
+  });
+  defineOp('orbit', { params: { at: 0, radius: 160, speed: 0.4 }, apply: (tl, t, p) =>
+    tl.modify(t, (lt) => ({ x: Math.cos(lt * p.speed * Math.PI * 2) * p.radius, y: Math.sin(lt * p.speed * Math.PI * 2) * p.radius }), { at: p.at }) });
+  definePreset('hero', { params: { at: 0.3 }, items: [
+    { kind: 'op', op: 'textIn', target: '{{target}}', params: { at: '{{at}}', preset: 'blur', by: 'char', stagger: 0.03 } },
+    { kind: 'node', type: 'layer', mode: 'add', target: '{{target}}', params: { y: { fx: [{ type: 'oscillate', amp: 6, freq: 0.5 }] } } },
+  ] });
+
+  // ---------------------------------------------------------------- scene 1: every param-spec feature, one row each
+  const W1 = 960, M = W1 / 2;
+  const ROWS = [
+    ['常量', 480],
+    ['keys + loop', { keys: [[0, 0], [1.5, W1, 'outBack'], [3, 0, 'inOutCubic']], loop: 3 }],
+    ['link', { link: 'lfo.v', mul: 420, add: M }],
+    ['link + lag', { link: 'lfo.v', mul: 420, add: M, lag: 0.6 }],
+    ['fx noise', { value: M, fx: [{ type: 'noise', amp: 420, freq: 0.5, octaves: 3 }] }],
+    ['fx spring', { value: 0, fx: [{ type: 'spring', to: W1, at: 1, stiffness: 5, damping: 0.22 }] }],
+    ['oscillate + quantize', { value: M, fx: [{ type: 'oscillate', amp: 440, freq: 0.3, shape: 'tri' }, { type: 'quantize', step: 120 }] }],
+    ['expr + ch()', { value: M, expr: 'value + sin(t * 2) * 260 + ch("beat.v") * 160' }],
+    ['min / max', { expr: '(t % 3) * 400', min: 240, max: 720 }],
+    ['自定义 hop', { expr: '(t * 240) % 960' }, { fx: [{ type: 'hop', amp: 18, freq: 2 }] }],
+  ];
+  const rowsHTML = ROWS.map(([name, spec], k) => `<div class="row" style="top:${150 + k * 82}px">
+      <code><b>${name}</b>${JSON.stringify(spec).replace(/</g, '&lt;')}</code><i class="track"></i><i class="ball r${k}"></i></div>`).join('');
+
+  // runner puppet for scene 3
+  const runner = new MeshPuppet({ src: '../marathon/assets/runner.svg', width: 320, height: 480, headLine: 0.28 });
+  let g1 = null;
+
+  const scene1 = {
+    id: 'spec', title: '参数规格', dur: 10, className: 'bg-grad',
+    html: `<h2 class="h">参数规格<small>每个参数 = 常量 / 关键帧 / 链接 / 行为 / 表达式</small></h2><i class="beatdot"></i>${rowsHTML}`,
+    build(tl, el) {
+      const g = (g1 = tl.graph({ root: el, stage: el }));
+      g.add([
+        { kind: 'node', id: 'lfo', type: 'channel', params: { v: { fx: [{ type: 'oscillate', amp: 1, freq: 0.35 }] } } },
+        { kind: 'node', id: 'beat', type: 'channel', params: { v: { value: 0, fx: [{ type: 'pulse', bpm: 100, amp: 1, decay: 6 }] } } },
+        { kind: 'node', id: 'beatdot', type: 'layer', target: '.beatdot', params: { scale: { link: 'beat.v', mul: 0.9, add: 1 } } },
+        ...ROWS.map(([, x, extra], k) => ({ kind: 'node', id: `r${k}`, type: 'layer', target: `.r${k}`, params: { x, ...(extra ? { y: extra } : {}) } })),
+        { kind: 'preset', preset: 'popIn', target: '.row', params: { at: 0.2, stagger: 0.05 } },
+      ]);
+    },
+  };
+
+  // ---------------------------------------------------------------- scene 2: duplicator × distribution × falloff
+  const PW = 580, PH = 400, C = [PW / 2, PH / 2 - 14];
+  const PANELS = [
+    ['grid × radial', 'd', 88, { type: 'grid', cols: 11, spacing: [48, 40], center: C },
+      { type: 'radial', center: { expr: '[290 + sin(t * 1.2) * 200, 186 + cos(t * 0.9) * 90]' }, radius: 170, soft: 0.7 }],
+    ['circle × index (align)', 'bar', 48, { type: 'circle', radius: 140, center: C },
+      { type: 'index', start: { keys: [[0, -0.3], [4, 1, 'inOutCubic']], loop: 4 }, end: { keys: [[0, 0], [4, 1.3, 'inOutCubic']], loop: 4 } }, true],
+    ['spiral × noise', 'd', 120, { type: 'spiral', radius: 170, turns: 4, center: C },
+      { type: 'noise', scale: 0.012, speed: 0.8 }],
+    ['random × linear', 'd pink', 110, { type: 'random', bounds: [540, 330], center: C, seed: 4 },
+      { type: 'linear', angle: 0, width: 140, offset: { keys: [[0, -160], [4, 600, 'inOutQuad']], loop: 4 } }],
+    ['line × spring stagger', 'bar', 36, { type: 'line', from: [40, 190], to: [540, 190] }, { type: 'none' }],
+    ['自定义 heart × ring', 'd pink', 90, { type: 'heart', size: 9, center: [290, 170] },
+      { type: 'ring', center: [290, 170], radius: { expr: '60 + (t * 60) % 120' }, width: 50 }],
+  ];
+  const panelPos = (k) => [60 + (k % 3) * 610, 140 + Math.floor(k / 3) * 440];
+  const scene2 = {
+    id: 'dup', title: '复制器', dur: 9, transition: 'slide', className: 'bg-grad',
+    html: `<h2 class="h">复制器<small>分布 × 衰减 → 每个克隆有 i / u / w / px / py</small></h2>` +
+      PANELS.map(([name], k) => { const [x, y] = panelPos(k); return `<div class="panel p${k}" style="left:${x}px;top:${y}px"><p>${name}</p></div>`; }).join(''),
+    build(tl, el) {
+      const g = tl.graph({ root: el, stage: el });
+      PANELS.forEach(([name, cls, count, distribution, falloff, align], k) => {
+        const params = k === 4
+          ? { scaleY: { value: 0.1, fx: [{ type: 'spring', to: 3, at: 0.5, stagger: 0.06 }, { type: 'noise', amp: 0.6, freq: 1.5 }] }, opacity: 0.9 }
+          : { scale: { value: 1.8, fx: [{ type: 'falloff', rest: 0.3 }] }, opacity: { value: 1, fx: [{ type: 'falloff', rest: 0.15 }] } };
+        g.node({ id: `dup${k}`, type: 'duplicator', parent: `.p${k}`, html: `<i class="${cls}"></i>`, count, distribution, falloff, align, params });
+      });
+    },
+  };
+
+  // ---------------------------------------------------------------- scene 3: every model is manipulable
+  const scene3 = {
+    id: 'models', title: '模型操纵', dur: 9, transition: 'zoom', className: 'bg-grad',
+    html: `<h2 class="h" style="z-index:4">模型操纵<small>Space3D 物体 / 相机 / 角色参数 = 节点</small></h2><div class="hud3"></div>`,
+    build(tl, el) {
+      const sp = new Space3D(el, { fov: 900, fog: [400, 4200] });
+      const floor = sp.add(Space3D.grid(3600, 200, { color: '#1e293b', y: 420, width: 1 }));
+      const sphere = sp.add(Space3D.sphere(170, 420, { color: '#ff2e88', x: -560, y: 120, size: 2.2 }));
+      const ring = sp.add(Space3D.ring(240, 120, { color: '#c6ff00', width: 3, x: -560, y: 120, rx: 72, progress: 0 }));
+      sp.bind(tl);
+      runner.el.classList.add('runner'); el.appendChild(runner.el); tl.add((lt) => runner.update(lt));
+      const hud = el.querySelector('.hud3');
+      const g = tl.graph({ root: el, stage: el, refs: { sp, floor, sphere, ring, runner } });
+      g.add([
+        { kind: 'node', id: 'beat3', type: 'channel', params: { v: { value: 0, fx: [{ type: 'pulse', bpm: 110, amp: 1, decay: 5 }] } } },
+        { kind: 'node', id: 'cam', type: 'object', target: '@sp.cam', params: {
+          ry: { expr: 'sin(t * 0.35) * 18' }, rx: { keys: [[0, -4], [9, -16, 'inOutQuad']] }, z: { keys: [[0, -1700], [9, -1200, 'inOutCubic']] } } },
+        { kind: 'node', id: 'cubes', type: 'duplicator', space: '@sp', count: 27, shape: { type: 'box', args: [70, 70, 70], opts: { color: '#6ee7ff', width: 1.5 } },
+          distribution: { type: 'grid3', dims: [3, 3, 3], spacing: [150, 150, 150] },
+          falloff: { type: 'radial', center: { expr: '[sin(t * 1.4) * 220, 0]' }, radius: 260, soft: 0.8 },
+          params: { x: 380, y: 100, s: { value: 1.4, fx: [{ type: 'falloff', rest: 0.35 }], expr: 'value * (1 + ch("beat3.v") * 0.25 * w)' },
+            ry: { expr: 't * 40 + i * 13' }, rx: { expr: 't * 25' }, opacity: { value: 1, fx: [{ type: 'falloff', rest: 0.25 }] } } },
+        { kind: 'node', id: 'sphere', type: 'object', target: '@sphere', params: { ry: { expr: 't * 30' }, s: { link: 'beat3.v', mul: 0.12, add: 1 } } },
+        { kind: 'node', id: 'ring', type: 'object', target: '@ring', params: { rz: { expr: 't * 50' }, progress: { keys: [[0.3, 0], [3, 1, 'inOutCubic']] } } },
+        { kind: 'node', id: 'runner', type: 'object', target: '@runner.params', params: {
+          nod: { link: 'beat3.v', mul: 5 }, headX: { fx: [{ type: 'oscillate', amp: 0.5, freq: 0.3 }] }, mouth: { expr: 't > 5 ? abs(sin(t * 9)) * 0.8 : 0' } } },
+        { kind: 'op', op: 'emote', target: '@runner', params: { name: 'bounce', at: 2, dur: 1.2 } },
+        { kind: 'op', op: 'emote', target: '@runner', params: { name: 'tilt', at: 4, dur: 1 } },
+      ]);
+      // Live readout straight from the graph (pure reads, same values the renderer uses).
+      const f = (v) => (typeof v === 'number' ? v.toFixed(2).padStart(8) : v);
+      tl.add((lt, gt) => {
+        hud.textContent = `beat3.v    ${f(g.get('beat3.v', gt))}\ncam.ry     ${f(tl.valueAt(sp.cam, 'ry', gt))}\ncubes[13].s${f(tl.valueAt(sp.objs[3 + 13], 's', gt))}\nrunner.nod ${f(tl.valueAt(runner.params, 'nod', gt))}`;
+      });
+    },
+  };
+
+  // ---------------------------------------------------------------- scene 4: operators & presets (built-in + custom)
+  const scene4 = {
+    id: 'ops', title: '算子与预设', dur: 9, transition: 'wipe', className: 'bg-grad',
+    html: `<h2 class="t4">每个特效都可复用</h2><p class="sub4">op = 带参数表的特效 · preset = 一组 item 的模板</p>
+      <div class="num">0</div><div class="tw">tl.op('typewriter', el, { cps: 24 })</div><div class="sc">SCRAMBLE → DECODED</div>
+      <div class="chips"><span class="chip">textIn</span><span class="chip">counter</span><span class="chip">typewriter</span><span class="chip">scramble</span><span class="chip">glitch</span><span class="chip">shake</span></div>
+      <div class="orbit-c"><i class="orb"></i></div>`,
+    build(tl, el) {
+      const g = tl.graph({ root: el, stage: el });
+      g.add([
+        { kind: 'preset', preset: 'hero', target: '.t4', params: { at: 0.2 } },                       // custom preset
+        { kind: 'op', op: 'tween', target: '.sub4', params: { from: { opacity: 0, y: 20 }, at: 0.8, dur: 0.6 } },
+        { kind: 'op', op: 'counter', target: '.num', params: { at: 1.2, from: 0, to: 2026, dur: 2, sfx: null } },
+        { kind: 'op', op: 'typewriter', target: '.tw', params: { at: 1.6, cps: 24, sfx: null } },
+        { kind: 'op', op: 'scramble', target: '.sc', params: { at: 3.2, dur: 1.2, sfx: null } },
+        { kind: 'preset', preset: 'popIn', target: '.chip', params: { at: 4.2, stagger: 0.08 } },
+        { kind: 'op', op: 'glitch', target: '.num', params: { at: 5.6, dur: 0.6 } },
+        { kind: 'op', op: 'shake', target: '.chips', params: { at: 6.4, dur: 0.5, amp: 10 } },
+        { kind: 'op', op: 'orbit', target: '.orb', params: { at: 0, radius: 160, speed: 0.35 } },         // custom op
+        { kind: 'preset', preset: 'beatPulse', target: '.orb', params: { bpm: 100, amp: 0.35 } },
+        { kind: 'op', op: 'particles', params: { mode: 'dust', count: 60, color: '#6ee7ff', seed: 5 } },
+      ]);
+      tl.op('float', el.querySelector('.orbit-c'), { amp: 14, speed: 0.3 }); // timeline sugar, same trace
+    },
+  };
+
+  // ---------------------------------------------------------------- scene 5: every motion is traceable
+  const scene5 = {
+    id: 'trace', title: '可追溯', dur: 8, transition: 'fade', className: 'bg-grad',
+    html: `<h2 class="h">可追溯<small>tl.inspect() · tl.sample() · toJSON / fromJSON · 按 I 打开检查器</small></h2>
+      <h3 class="t5">tl.inspect()</h3><pre class="json"></pre><div class="stats5"></div>
+      <canvas class="cv5" width="1000" height="560" aria-label="第一幕小球 x 曲线"></canvas><div class="legend"></div>`,
+    build(tl, el) {
+      const ins = tl.inspect();
+      // One line per distinct trace source: which target it moves and which props.
+      const seen = new Set(), lines = [];
+      for (const t of ins.targets) {
+        const src = t.mods.map((m) => m.src).concat(Object.values(t.props).flat().map((p) => p.src)).find((x) => x && !seen.has(x));
+        if (!src) continue;
+        seen.add(src);
+        lines.push({ target: t.target, src, props: Object.keys(t.props).join(',') || 'modifier' });
+      }
+      el.querySelector('.json').textContent = `// ${ins.duration}s · 每个运动的来源\n` +
+        lines.slice(0, 17).map((l) => `${l.target.slice(0, 18).padEnd(19)}${l.props.slice(0, 14).padEnd(15)}← ${l.src}`).join('\n');
+      const srcs = new Set(ins.targets.flatMap((t) => [...t.mods.map((m) => m.src), ...Object.values(t.props).flat().map((p) => p.src)]).filter(Boolean));
+      el.querySelector('.stats5').textContent =
+        `targets ${ins.targets.length}   ops ${ins.ops.length}   graphs ${ins.graphs.length}\n` +
+        `nodes ${ins.graphs.reduce((a, g) => a + g.items.length, 0)}   distinct src ${srcs.size}`;
+
+      // Curves: pure samples of scene-1 balls (no side effects on the targets).
+      const cv = el.querySelector('.cv5'), c = cv.getContext('2d'), rows = [1, 3, 5, 7];
+      const colors = ['#6ee7ff', '#ff2e88', '#c6ff00', '#fbbf24'];
+      const balls = rows.map((k) => document.querySelector(`[data-scene="spec"] .r${k}`));
+      const curves = balls.map((b) => tl.sample(b, 'x', 0, scene1.dur, 400));
+      const all = curves.flat().map((p) => p[1]), lo = Math.min(...all), hi = Math.max(...all);
+      const X = (t) => 20 + (t / scene1.dur) * (cv.width - 40), Y = (v) => cv.height - 20 - ((v - lo) / (hi - lo || 1)) * (cv.height - 40);
+      const draw = (p) => {
+        c.clearRect(0, 0, cv.width, cv.height);
+        c.strokeStyle = '#1f2a3a'; c.lineWidth = 1;
+        for (let s = 0; s <= scene1.dur; s++) { c.beginPath(); c.moveTo(X(s), 10); c.lineTo(X(s), cv.height - 10); c.stroke(); }
+        curves.forEach((pts, j) => {
+          c.strokeStyle = colors[j]; c.lineWidth = 2.5; c.beginPath();
+          const n = Math.max(2, Math.floor(pts.length * p));
+          pts.slice(0, n).forEach(([t, v], i) => (i ? c.lineTo(X(t), Y(v)) : c.moveTo(X(t), Y(v))));
+          c.stroke();
+        });
+      };
+      tl.add((lt) => draw(clamp(lt / 3)));
+
+      // Round-trip: rebuild scene 1's graph from its JSON on a fresh timeline, compare values.
+      const json = g1.toJSON();
+      const TL = tl.constructor, tl2 = new TL();
+      const el1 = document.querySelector('[data-scene="spec"]');
+      Graph.fromJSON(tl2, json, { root: el1, stage: el1 });
+      const probe = [1.3, 4.7, 8.2].map((t) => [tl.valueAt(balls[2], 'x', t), tl2.valueAt(balls[2], 'x', t)]);
+      const ok = probe.every(([a, b]) => Math.abs(a - b) < 1e-9);
+      el.querySelector('.legend').textContent =
+        rows.map((k, j) => `■ ${ROWS[k][0]}`).join('   ') + '\n' +
+        `Graph.fromJSON(scene1) → r5.x @1.3/4.7/8.2s ${probe.map(([a]) => a.toFixed(1)).join(' / ')}  ${ok ? '✓ 一致' : '✗ 不一致'}`;
+      el.querySelectorAll('.legend').forEach((l) => { l.style.color = ok ? '#cbd5e1' : '#ff2e88'; });
+    },
+  };
+
+  // ---------------------------------------------------------------- scene 6: learned from the others
+  // GLSL layer (TouchDesigner GLSL TOP / cables.gl), audio-style envelope channel, stacked falloffs,
+  // markers (Motion Canvas), {{props}} + scene.graph as pure data (Remotion props / Rendervid JSON).
+  registerEnvelope('kick', Array.from({ length: 240 }, (_, k) => Math.exp(-((k % 30) / 30) * 6)), 30);
+  const scene6 = {
+    id: 'learn', title: '融合', dur: 8, transition: 'circle', className: 'bg-grad',
+    markers: { drop: 3 },
+    html: `<h2 class="h" style="z-index:3">融合<small>GLSL 层 · 音频包络 · 叠加衰减 · 标记 · props</small></h2>
+      <h2 class="t6">{{title}}</h2><p class="sub6">shader.uAmp ← env("kick") · falloff: [radial, linear(add), index(multiply)] · at: '@drop'</p>
+      <div class="p6" style="position:absolute;left:0;top:0;width:1920px;height:1080px;z-index:2"></div>`,
+    build(tl, el) {
+      const sh = new ShaderLayer(el, { z: 0, scale: 0.5, uniforms: { uAmp: 0, uHue: 0.55 }, frag: `
+        void main(){ vec2 p = (uv - .5) * vec2(uResolution.x / uResolution.y, 1.);
+          float r = length(p), a = atan(p.y, p.x);
+          float w = sin(r * 28. - uTime * 3. + sin(a * 6. + uTime) * uAmp * 2.) * .5 + .5;
+          vec3 c = .5 + .5 * cos(6.2831 * (uHue + r * .6 + vec3(0., .33, .67)));
+          gl_FragColor = vec4(c * w * (.25 + uAmp * .5) * smoothstep(.9, .1, r), 1.); }` });
+      sh.bind(tl);
+      tl.graph({ root: el, stage: el, refs: { sh } }).add([
+        { kind: 'node', id: 'kick', type: 'channel', params: { v: { value: 0, fx: [{ type: 'envelope', name: 'kick', amp: 1 }] } } },
+        { kind: 'node', id: 'shader', type: 'object', target: '@sh.uniforms', params: {
+          uAmp: { link: 'kick.v', mul: 0.8, add: 0.2 }, uHue: { expr: '0.55 + t * 0.03' } } },
+        { kind: 'node', id: 'dots6', type: 'duplicator', parent: '.p6', html: '<i class="d"></i>', count: 160,
+          distribution: { type: 'grid', cols: 20, spacing: [90, 110], center: [960, 560] },
+          falloff: [
+            { type: 'radial', center: { expr: '[960 + sin(t) * 500, 560]' }, radius: 320, soft: 0.6 },
+            { type: 'linear', angle: 0, width: 200, offset: { keys: [[3, -300], [7, 2200, 'inOutQuad']] }, blend: 'add' },
+            { type: 'index', start: 0, end: 1.2, invert: true, blend: 'multiply', strength: 0.5 },
+          ],
+          params: { scale: { value: 2.4, fx: [{ type: 'falloff', rest: 0.2 }], expr: 'value * (1 + ch("kick.v") * 0.4 * w)' },
+            opacity: { value: 1, fx: [{ type: 'falloff', rest: 0.1 }] } } },
+        { kind: 'preset', preset: 'hero', target: '.t6', params: { at: 0.4 } },
+        { kind: 'op', op: 'tween', target: '.sub6', params: { from: { opacity: 0, y: 20 }, at: '@drop', dur: 0.6 } },
+        { kind: 'op', op: 'shake', target: '.t6', params: { at: '@drop', dur: 0.4, amp: 12 } },
+      ]);
+    },
+  };
+
+  await createVideo({
+    width: 1920, height: 1080, fps: 30,
+    theme: { accent: '#6ee7ff', accent2: '#c6ff00' },
+    props: { title: 'Remotion × TD × Cavalry' },
+    ready: [runner.ready],
+    scenes: [scene1, scene2, scene3, scene4, scene5, scene6],
+  });
+</script>
+</body>
+</html>

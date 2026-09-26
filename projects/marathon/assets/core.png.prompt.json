@@ -1,0 +1,25 @@
+{
+  "model": "gpt-image-2.5",
+  "prompt": "Floating abstract technological core object, layered translucent geometric plates and wireframe rings, acid lime and hot pink glow on off-white and black, graphic design sci-fi aesthetic, isolated object centered, transparent background, no text",
+  "size": "1024x1024",
+  "quality": "high",
+  "n": 1,
+  "output_format": "png",
+  "background": "transparent",
+  "edit": [],
+  "usage": {
+    "input_tokens": 42,
+    "output_tokens": 6500,
+    "total_tokens": 6542,
+    "input_tokens_details": {
+      "text_tokens": 42,
+      "image_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens_details": {
+      "text_tokens": 0,
+      "image_tokens": 6500,
+      "reasoning_tokens": 0
+    }
+  }
+}

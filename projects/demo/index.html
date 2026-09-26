@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Demo — HTML 视频框架</title>
+  <link rel="stylesheet" href="../../engine/base.css">
+  <style>
+    .intro-glow { position: absolute; width: 900px; height: 900px; left: 510px; top: 90px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(110,231,255,.35), transparent 60%); }
+    .stats { display: flex; gap: 48px; }
+    .stat { width: 420px; text-align: center; }
+    .stat b { display: block; font-size: 110px; font-weight: 800; }
+    .stat span { color: var(--muted); font-size: 34px; }
+    .app { position: absolute; left: 180px; top: 180px; width: 1100px; height: 680px; }
+    .app .body { padding: 48px; display: grid; gap: 28px; }
+    .field { height: 72px; border-radius: 12px; background: #1c2433; border: 1px solid #2f3a4f; font-size: 30px; padding: 18px 22px; color: #cbd5e1; font-family: var(--mono); }
+    .btn { justify-self: start; padding: 20px 44px; border-radius: 14px; background: var(--accent); color: #041018; font-size: 32px; font-weight: 700; }
+    .toast { position: absolute; right: 60px; bottom: 60px; padding: 22px 30px; border-radius: 14px; background: #14532d; color: #bbf7d0; font-size: 28px; }
+  </style>
+</head>
+<body>
+<script type="module">
+  import { createVideo, MeshPuppet, fx } from '../../engine/index.js';
+
+  // Prefer the GPT-image asset if it has been generated; fall back to the placeholder.
+  const asset = async (png, fallback) => ((await fetch(png, { method: 'HEAD' })).ok ? png : fallback);
+  const mascotSrc = await asset('assets/mascot.png', 'assets/mascot.svg');
+  const bgIntro = await asset('assets/bg-intro.png', null);
+
+  const mascot = new MeshPuppet({ src: mascotSrc, width: 520, height: 780, headLine: 0.5, seed: 4 });
+
+  await createVideo({
+    width: 1920, height: 1080, fps: 30,
+    theme: { accent: '#6ee7ff', accent2: '#a78bfa' },
+    ready: [mascot.ready],
+    scenes: [
+      {
+        id: 'intro', title: '开场', dur: 6, className: 'bg-grad',
+        html: `
+          ${bgIntro ? `<img class="bg-image" src="${bgIntro}">` : ''}
+          <div class="intro-glow"></div>
+          <div class="center">
+            <h1 class="title grad-text">HTML Motion Kit</h1>
+            <p class="subtitle">用网页做出流畅的介绍视频</p>
+          </div>`,
+        build(tl, el, { stage }) {
+          const bg = el.querySelector('.bg-image');
+          if (bg) fx.kenBurns(tl, bg, { dur: 6 });
+          fx.particles(tl, el, { mode: 'bokeh', count: 26, colors: ['#6ee7ff', '#a78bfa'], seed: 2 });
+          tl.fromTo(el.querySelector('.intro-glow'), { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1 }, { at: 0, dur: 2, ease: 'outCubic' });
+          tl.sfx('rise', 0, { dur: 0.9 });
+          fx.textIn(tl, el.querySelector('.title'), { at: 0.8, preset: 'blur', stagger: 0.04, dur: 0.8 });
+          tl.sfx('impact', 1.1);
+          fx.textIn(tl, el.querySelector('.subtitle'), { at: '-0.2', preset: 'rise', stagger: 0.03 });
+          tl.caption('这是一个完全基于 HTML / JS 的视频框架', 2.2, 3.4);
+        },
+      },
+      {
+        id: 'mascot', title: '角色', dur: 7, transition: 'zoom', className: 'bg-grad',
+        html: `
+          <div class="card" style="position:absolute;left:760px;top:300px;width:960px">
+            <ul class="bullets">
+              <li>GPT Image 生成角色与背景</li>
+              <li>网格变形：呼吸、摇摆、点头</li>
+              <li>时间轴驱动，可拖动、可逐帧导出</li>
+            </ul>
+          </div>`,
+        build(tl, el) {
+          el.appendChild(mascot.el);
+          Object.assign(mascot.el.style, { left: '160px', top: '260px' });
+          tl.from(mascot.el, { y: 500, opacity: 0 }, { at: 0.3, dur: 0.9, ease: 'outBack' });
+          tl.add((lt) => mascot.update(lt));
+          mascot.emote('bounce', 1.3, 0.6).emote('nod', 3.2, 0.9).emote('tilt', 5, 1.2);
+          tl.sfx('pop', 1.3);
+          fx.staggerIn(tl, el.querySelectorAll('.bullets li'), { at: 1.6, stagger: 0.5, from: { x: 60, opacity: 0 }, sfx: 'blip' });
+          tl.caption('角色图由 Agent 生成后自动做成可动的形象', 1.5, 4.8);
+        },
+      },
+      {
+        id: 'stats', title: '数据', dur: 5, transition: 'slide', className: 'bg-grad',
+        html: `
+          <div class="center">
+            <div class="stats">
+              <div class="stat card"><b class="n1">0</b><span>帧/秒</span></div>
+              <div class="stat card"><b class="n2">0</b><span>内置音效</span></div>
+              <div class="stat card"><b class="n3">0</b><span>外部依赖（运行时）</span></div>
+            </div>
+          </div>`,
+        build(tl, el) {
+          fx.staggerIn(tl, el.querySelectorAll('.stat'), { at: 0.6, stagger: 0.15, from: { y: 80, opacity: 0, scale: 0.9 }, ease: 'outBack' });
+          fx.counter(tl, el.querySelector('.n1'), { to: 60, at: 1, dur: 1.4 });
+          fx.counter(tl, el.querySelector('.n2'), { to: 15, at: 1.2, dur: 1.4, sfx: null });
+          fx.counter(tl, el.querySelector('.n3'), { from: 99, to: 0, at: 1.4, dur: 1.4, sfx: null });
+          fx.particles(tl, el, { mode: 'burst', at: 3, count: 70, colors: ['#6ee7ff', '#a78bfa', '#fff'], origin: [0.5, 0.45] });
+        },
+      },
+      {
+        id: 'tutorial', title: '教程演示', dur: 8, transition: 'up', className: 'bg-grad',
+        html: `
+          <div class="window app">
+            <div class="bar"><i></i><i></i><i></i></div>
+            <div class="body">
+              <div class="field">npm run img -- --manifest assets.json</div>
+              <div class="field typed" data-text="npm run render -- projects/demo"></div>
+              <div class="btn">生成视频</div>
+            </div>
+          </div>
+          <div class="toast">✓ out.mp4 已导出</div>`,
+        build(tl, el, { stage }) {
+          const app = el.querySelector('.app');
+          tl.from(app, { y: 60, opacity: 0, scale: 0.96 }, { at: 0.5, dur: 0.8, ease: 'outCubic' });
+          fx.typewriter(tl, el.querySelector('.typed'), { at: 1.6, cps: 18 });
+          fx.cursor(tl, el, [
+            { to: [1500, 900], at: 1.2, dur: 0.01 },
+            { to: el.querySelector('.btn'), at: 4.0, dur: 0.9, click: true, press: true },
+          ]);
+          fx.highlight(tl, el, el.querySelector('.btn'), { at: 3.4, dur: 1.2 });
+          tl.from(el.querySelector('.toast'), { y: 40, opacity: 0 }, { at: 5.3, dur: 0.5, ease: 'outBack' });
+          tl.sfx('success', 5.3);
+          tl.caption('教程场景：打字、光标点击、高亮，全部自动配音效', 1.5, 5.5);
+        },
+      },
+      {
+        id: 'outro', title: '结尾', dur: 5, transition: 'circle', className: 'bg-grad',
+        html: `<div class="center"><h1 class="title">开始创作吧</h1><p class="subtitle">npm run new -- my-video</p></div>`,
+        build(tl, el) {
+          fx.textIn(tl, el.querySelector('.title'), { at: 0.7, preset: 'drop', stagger: 0.07, sfx: 'whoosh' });
+          fx.textIn(tl, el.querySelector('.subtitle'), { at: '+0.1', preset: 'pop', stagger: 0.02 });
+          fx.particles(tl, el, { mode: 'confetti', at: 1.4, count: 120, colors: ['#6ee7ff', '#a78bfa', '#fde047', '#f472b6'], origin: [0.5, 0.4] });
+          tl.to(el, { opacity: 0 }, { at: 4.2, dur: 0.8 });
+        },
+      },
+    ],
+    // Supply a music file for real projects: music: { src: 'assets/music.mp3', volume: 0.3 }
+  });
+</script>
+</body>
+</html>

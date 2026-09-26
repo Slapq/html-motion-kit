@@ -1,0 +1,22 @@
+{
+  "defaults": { "quality": "high", "size": "1536x1024" },
+  "images": [
+    {
+      "out": "assets/bg-intro.png",
+      "prompt": "Wide cinematic abstract background, deep navy to violet gradient, soft glowing geometric shapes, subtle depth of field, lots of empty space in the center for a title, no text, no logos"
+    },
+    {
+      "out": "assets/mascot.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "prompt": "Full-body front-facing anime-style mascot character, friendly young engineer with violet hair and a cyan hoodie, standing upright, arms relaxed at the sides, neutral pose, centered, feet at the bottom edge, clean flat cel shading, transparent background, no text"
+    },
+    {
+      "out": "assets/mascot-talk.png",
+      "size": "1024x1536",
+      "transparent": true,
+      "edit": ["assets/mascot.png"],
+      "prompt": "Same character, identical pose, framing and style; only change the mouth to open as if speaking. Transparent background."
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "model": "gpt-image-2.5",
+  "prompt": "Full-body front-facing sci-fi runner character, sleek armored running suit with graphic panel lines, faceless visor helmet, flat graphic cel shading, off-white suit with acid lime and hot pink accents and black details, standing upright, arms relaxed at the sides, neutral pose, centered, feet at the bottom edge, transparent background, no text, no logos",
+  "size": "1024x1536",
+  "quality": "high",
+  "n": 1,
+  "output_format": "png",
+  "background": "transparent",
+  "edit": [],
+  "usage": {
+    "input_tokens": 70,
+    "output_tokens": 6240,
+    "total_tokens": 6310,
+    "input_tokens_details": {
+      "text_tokens": 70,
+      "image_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens_details": {
+      "text_tokens": 0,
+      "image_tokens": 6240,
+      "reasoning_tokens": 0
+    }
+  }
+}

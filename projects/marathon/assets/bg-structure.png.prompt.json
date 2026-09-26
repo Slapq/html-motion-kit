@@ -1,0 +1,24 @@
+{
+  "model": "gpt-image-2.5",
+  "prompt": "Post-modern sci-fi megastructure seen from below, brutalist graphic design poster aesthetic, near-black background with off-white planes, thin technical line art, halftone dot fields, acid lime (#C6FF00) and hot pink (#FF2E88) accent blocks, flat geometric planes, strong perspective, lots of negative space, no text, no letters, no logos",
+  "size": "1536x1024",
+  "quality": "high",
+  "n": 1,
+  "output_format": "png",
+  "edit": [],
+  "usage": {
+    "input_tokens": 77,
+    "output_tokens": 6240,
+    "total_tokens": 6317,
+    "input_tokens_details": {
+      "text_tokens": 77,
+      "image_tokens": 0,
+      "cached_tokens": 0
+    },
+    "output_tokens_details": {
+      "text_tokens": 0,
+      "image_tokens": 6240,
+      "reasoning_tokens": 0
+    }
+  }
+}
