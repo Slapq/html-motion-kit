@@ -1,10 +1,43 @@
 {
-  "name": "html-video-framework",
-  "version": "0.1.0",
-  "description": "Frame-exact HTML/JS motion graphics & video framework with a TouchDesigner/Cavalry-style data graph",
+  "name": "html-motion-kit",
+  "version": "0.2.0",
+  "description": "Frame-exact HTML/JS motion graphics & video framework with a TouchDesigner/Cavalry-style data graph; usable as a DeepSeek Harness (DSH) plugin",
   "license": "MIT",
   "private": true,
   "type": "module",
+  "main": "dsh/index.js",
+  "exports": {
+    ".": "./dsh/index.js",
+    "./engine": "./engine/index.js",
+    "./package.json": "./package.json"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek",
+    "harness",
+    "motion-graphics",
+    "video",
+    "touchdesigner",
+    "cavalry"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dsh",
+    "engine",
+    "tools",
+    "projects/demo",
+    "projects/graph-showcase",
+    "README.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./dsh/cordis.patch.yml"
+    }
+  },
   "scripts": {
     "serve": "node tools/serve.mjs",
     "img": "node tools/gen-image.mjs",

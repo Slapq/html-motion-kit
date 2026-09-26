@@ -1,0 +1,14 @@
+# HTML Motion Kit bundle patch for DeepSeek Harness (the `dsh.bundle.patch` manifest field).
+# Activate with:
+#   dsh plugin --profile web add link:<path-to>/html-motion-kit
+#
+# Registers the `html-motion-kit` skill and four tools:
+#   motion_info / motion_new / motion_still / motion_render
+# Config:
+#   root        (default: this package)  HTML Motion Kit root; projects live in <root>/projects
+#   timeoutSec  1800                     per-command timeout for new/still/render
+- insert:
+    - id: html-motion-kit
+      name: 'html-motion-kit'
+      config:
+        timeoutSec: 1800

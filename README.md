@@ -16,6 +16,7 @@
 - **GPU 着色器层、音频包络、叠加衰减、命名标记、input props、并行导出**：详见下文「融合」一节。
 - **角色与三维**：单张 PNG / SVG 的网格变形角色（Live2D 式），Canvas2D 伪 3D（点、线、面、雾效）。
 - **程序化音效**：whoosh、pop、click、鼓机等全部由 WebAudio 合成，无需素材，离线渲染后与画面合流。
+- **DSH 插件**：可作为 DeepSeek Harness 插件加载，Agent 直接调用 `motion_new / motion_still / motion_render`，见「作为 DSH 插件」。
 - **无构建步骤**：原生 ES 模块，唯一的 npm 依赖是 `puppeteer-core`。
 
 ## 快速开始
@@ -214,6 +215,28 @@ TouchDesigner 适合做生成式背景、粒子和 GLSL 效果，但它不能被
 3. 画面随时间轴精确寻址，导出结果与预览一致。
 
 注意：非商业版 TD 输出分辨率上限为 1280×1280（`fit: 'cover'` 会放大），`Movie File Out` 需要打开 TD 运行（无头模式需 TouchEngine / 商业授权）。实时互动（WebSocket DAT ↔ 浏览器）可用于预览，但不可用于逐帧导出。
+
+## 作为 DSH 插件（DeepSeek Harness）
+
+本仓库同时是一个 DeepSeek Harness（DSH） 插件包。装进 DSH 后，Agent 获得一个 `html-motion-kit` skill 和四个工具，可以在对话里直接写视频、抽帧检查、导出 MP4。
+
+```bash
+git clone https://github.com/Slapq/html-motion-kit && cd html-motion-kit && npm install
+dsh plugin --profile web add link:$(pwd)     # 或换成你的 profile 名
+dsh web
+```
+
+| 工具 | 作用 |
+|---|---|
+| `motion_info` | 根目录、README 路径、已有项目列表 |
+| `motion_new` | 创建 `projects/<name>`（三幕模板） |
+| `motion_still` | 渲染时间 `t` 的单帧 PNG，可传 `props` |
+| `motion_render` | 导出 MP4，支持 `from / to / fps / workers / props` |
+
+- 工具直接调用 `tools/new-project.mjs` 和 `tools/render.mjs`，与命令行结果一致。
+- 项目名只允许字母、数字、`-`、`_`；输出文件必须在项目目录内，越界路径直接报错。
+- 配置（`dsh/cordis.patch.yml`）：`root`（默认本仓库）、`timeoutSec`（默认 1800）。
+- 依赖与命令行相同：Chrome / Edge、PATH 中的 `ffmpeg`。
 
 ## 导出参数
 
