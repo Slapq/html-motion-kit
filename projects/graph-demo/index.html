@@ -5,9 +5,24 @@
   <title>Graph demo — 数据化节点</title>
   <link rel="stylesheet" href="../../engine/base.css">
   <style>
-    .dot { width: 26px; height: 26px; border-radius: 50%; background: var(--accent); margin: -13px 0 0 -13px; }
-    .hud { position: absolute; left: 80px; bottom: 80px; font: 700 64px/1 var(--mono, monospace); color: #fff; }
-    .runner { position: absolute; right: 120px; bottom: 0; }
+    .panel { position: absolute; left: 100px; top: 118px; width: 640px; }
+    .kicker { font: 700 22px/1 var(--mono, monospace); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin: 0 0 16px; }
+    .g-title { font-size: 72px; line-height: 1.24; font-weight: 800; letter-spacing: -1px; margin: 0; color: var(--fg); }
+    .g-title b { color: var(--accent); }
+    .underline { display: block; margin-top: 6px; }
+    .underline path { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; }
+    .g-sub { font-size: 26px; line-height: 1.55; color: var(--muted); margin: 18px 0 0; font-weight: 500; }
+    .checks { list-style: none; margin: 34px 0 0; padding: 0; font-size: 25px; line-height: 1.5; color: var(--muted); }
+    .checks li { display: flex; gap: 14px; align-items: baseline; margin: 15px 0; transition: color .3s, font-weight .3s; }
+    .checks li::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--line); margin-top: 6px; transition: background .3s; }
+    .checks li.active { color: var(--fg); font-weight: 700; }
+    .checks li.active::before { background: var(--accent); }
+    .checks b { font-family: var(--mono, monospace); color: inherit; }
+    .stat-wrap { position: absolute; left: 800px; top: 660px; width: 520px; text-align: center; }
+    .stat { font: 800 88px/1.3 var(--mono, monospace); color: var(--fg); }
+    .stat-label { font-size: 22px; letter-spacing: .06em; color: var(--muted); margin-top: 6px; text-transform: uppercase; }
+    .dot { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); margin: -11px 0 0 -11px; }
+    .runner { position: absolute; right: 70px; bottom: 0; }
   </style>
 </head>
 <body>
@@ -17,46 +32,81 @@
   // The whole scene is data: this object could live in scene.json.
   const graphJSON = {
     items: [
-      // CHOP-like channel: a beat envelope everything else can reference.
+      // CHOP-like channel: an eased sweep everything else can reference via ch("beat.sweep").
       { kind: 'node', id: 'beat', type: 'channel', params: {
-        v: { value: 0, fx: [{ type: 'pulse', bpm: 120, amp: 1, decay: 6 }] },
-        sweep: { keys: [[0, 0], [8, 1, 'inOutCubic']] },
+        sweep: { keys: [[0, 0], [13.5, 1, 'inOutCubic']] },
       } },
-      // Cavalry-style duplicator: 12×6 DOM dots on a grid, radial falloff follows the sweep.
-      { kind: 'node', id: 'dots', type: 'duplicator', parent: '@stage', html: '<div class="dot"></div>', count: 72,
-        distribution: { type: 'grid', cols: 12, spacing: [120, 90], center: [960, 400] },
-        falloff: { type: 'radial', center: { expr: '[lerp(300, 1620, ch("beat.sweep")), 400]' }, radius: 360, soft: 0.6 },
+      // Cavalry-style duplicator: 8x8 DOM dots on a grid, radial falloff follows the sweep.
+      { kind: 'node', id: 'dots', type: 'duplicator', parent: '@stage', html: '<div class="dot"></div>', count: 64,
+        distribution: { type: 'grid', cols: 8, spacing: [95, 80], center: [1260, 460] },
+        falloff: { type: 'radial', center: { expr: '[lerp(975, 1545, ch("beat.sweep")), 460]' }, radius: 320, soft: 0.6 },
         params: {
-          scale: { value: 1.6, fx: [{ type: 'falloff', rest: 0.25 }], expr: 'value * (1 + ch("beat.v") * 0.4 * w)' },
-          opacity: { value: 1, fx: [{ type: 'falloff', rest: 0.2 }] },
-          y: { expr: 'sin(t * 3 + i * 0.4) * 10 * w' },
+          scale: { value: 1.5, fx: [{ type: 'falloff', rest: 0.3 }] },
+          opacity: { value: 1, fx: [{ type: 'falloff', rest: 0.25 }] },
+          y: { expr: 'sin(t * 1.2 + i * 0.4) * 6 * w' },
         } },
-      // 3D objects are nodes too: route ring driven by the same channels.
+      // 3D objects are nodes too: route ring driven by the same channel.
       { kind: 'node', id: 'ring', type: 'object', target: '@ring', params: {
-        ry: { expr: 't * 30' }, s: { value: 1, expr: 'value + ch("beat.v") * 0.15' }, progress: { link: 'beat.sweep' },
+        ry: { value: 0, fx: [{ type: 'oscillate', amp: 18, freq: 0.12 }] },
+        s: { value: 1, expr: 'value + ch("beat.sweep") * 0.12' }, progress: { link: 'beat.sweep' },
       } },
       { kind: 'node', id: 'runner', type: 'object', target: '@runner.params', params: {
-        nod: { link: 'beat.v', mul: 4 }, headX: { value: 0, fx: [{ type: 'oscillate', amp: 0.4, freq: 0.25 }] },
+        headX: { value: 0, fx: [{ type: 'oscillate', amp: 0.3, freq: 0.2 }] },
       } },
-      { kind: 'op', op: 'counter', target: '.hud', params: { at: 0.5, from: 0, to: 42195, dur: 6, sfx: null } },
-      { kind: 'preset', preset: 'wobble', target: '.hud', params: { amp: 2, freq: 0.8 } },
+      // ops/presets are graph items too — text entrance, draw-on underline, staggered checklist, counter.
+      { kind: 'op', op: 'textIn', target: '.g-title', params: { at: 0.2, preset: 'line' } },
+      { kind: 'op', op: 'textIn', target: '.g-sub', params: { at: 0.6, preset: 'fade' } },
+      { kind: 'op', op: 'drawPath', target: '.underline', params: { at: 0.95, dur: 0.7 } },
+      { kind: 'preset', preset: 'popIn', target: '.checks li', params: { at: 1.1, stagger: 0.12 } },
+      { kind: 'op', op: 'counter', target: '.stat', params: { at: 1.3, from: 0, to: 42195, dur: 13.4 } },
     ],
   };
 
-  const runner = new MeshPuppet({ src: '../marathon/assets/runner.svg', width: 360, height: 540, headLine: 0.28 });
+  const runner = new MeshPuppet({ src: 'assets/runner.svg', width: 300, height: 450, headLine: 0.28 });
   await createVideo({
     width: 1920, height: 1080, fps: 30,
-    theme: { accent: '#c6ff00' },
+    look: 'light', theme: { accent: '#1a73e8' },
+    background: 'network', progress: true,
     ready: [runner.ready],
     scenes: [{
-      id: 'graph', title: '节点图', dur: 8, className: 'bg-grad',
-      html: `<div class="hud">0</div>`,
+      id: 'graph', title: '节点图', dur: 16, drift: 0,
+      html: `
+        <div class="panel">
+          <div class="kicker">HTML MOTION KIT · 节点图 API</div>
+          <h1 class="g-title">节点图 <b>Graph API</b></h1>
+          <svg class="underline" width="220" height="14" viewBox="0 0 220 14"><path d="M2 8 Q 110 2 218 8"/></svg>
+          <p class="g-sub">一份 JSON，驱动 DOM · 3D · 数字——照抄即用</p>
+          <ul class="checks">
+            <li><b>channel</b>&nbsp;数据通道：keys / link / fx</li>
+            <li><b>duplicator</b>&nbsp;64 份复制 + 径向衰减</li>
+            <li><b>object</b>&nbsp;驱动 3D 路线与角色参数</li>
+            <li><b>op / preset</b>&nbsp;counter 数字 · popIn 入场</li>
+          </ul>
+        </div>
+        <div class="stat-wrap">
+          <div class="stat">0</div>
+          <div class="stat-label">counter · 0 → 42195</div>
+        </div>`,
       build(tl, el) {
         const sp = new Space3D(el, { fov: 900 });
-        const ring = sp.add(Space3D.ring(260, 120, { color: '#ff2e88', width: 3, y: 120, rx: 70, progress: 0 }));
+        const ring = sp.add(Space3D.ring(190, 120, { color: '#1a73e8', width: 3, y: 260, rx: 55, x: 450, progress: 0 }));
         sp.bind(tl);
         runner.el.classList.add('runner'); el.appendChild(runner.el); tl.add((lt) => runner.update(lt));
+        runner.emote('bounce', 0.4);
         tl.graph({ root: el, stage: el, refs: { stage: el, ring, runner } }).add(graphJSON.items);
+
+        // Checklist highlight: discrete, purposeful spotlight — not a brightness/scale pulse.
+        const items = [...el.querySelectorAll('.checks li')];
+        const spots = [1.1, 4.3, 8.2, 11.6, 16];
+        tl.add((lt) => {
+          let idx = -1;
+          for (let i = 0; i < 4; i++) if (lt >= spots[i] && lt < spots[i + 1]) idx = i;
+          items.forEach((li, i) => li.classList.toggle('active', i === idx));
+        });
+
+        tl.caption('数据节点图：JSON 描述整个场景', 2.0, 3.2);
+        tl.caption('复制器 × 衰减，3D 与 DOM 共用同一条通道', 6.4, 3.4);
+        tl.caption('counter 算子驱动数字滚动', 11.2, 3.0);
       },
     }],
   });

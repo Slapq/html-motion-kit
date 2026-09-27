@@ -1,0 +1,28 @@
+{
+  "model": "gpt-image-2.5",
+  "prompt": "Redraw this exact chibi anime character in a clean high-resolution illustration: a chibi girl with very long wavy blue gradient hair (deep navy at the roots fading to light sky blue at the tips), two large whale-fin shaped ears on the sides of her head (dark blue with pale edges), a white frilled maid headdress with a blue ribbon bow and a small blue jewel, a navy-blue and white maid dress with a tiny whale emblem on the chest, big round blue eyes, soft cel shading, clean anime line art. Pose: full body, standing, facing the viewer, one hand raised in a friendly wave, warm happy smile, feet visible. Fully transparent background, no scenery, no text, no letters, no watermark, generous empty margin around the character.",
+  "size": "1024x1536",
+  "quality": "high",
+  "n": 1,
+  "output_format": "png",
+  "background": "transparent",
+  "edit": [
+    "C:\\MyAPPS\\CC\\projects\\motion-kit-promo\\assets\\ref-whale.png",
+    "C:\\MyAPPS\\CC\\projects\\motion-kit-promo\\assets\\ref-b.png"
+  ],
+  "usage": {
+    "input_tokens": 1042,
+    "output_tokens": 6240,
+    "total_tokens": 7282,
+    "input_tokens_details": {
+      "text_tokens": 158,
+      "image_tokens": 884,
+      "cached_tokens": 0
+    },
+    "output_tokens_details": {
+      "text_tokens": 0,
+      "image_tokens": 6240,
+      "reasoning_tokens": 0
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "model": "gpt-image-2.5",
+  "prompt": "Head and shoulders portrait of this exact chibi anime character, centered and filling most of the frame: chibi girl, very long wavy blue gradient hair (deep navy roots fading to light sky blue tips), two large whale-fin shaped ears on the sides of her head, white frilled maid headdress with a blue ribbon bow, big round blue eyes, a small cheerful smile, soft cel shading, clean anime line art, crisp edges. Fully transparent background, no text, no letters, no watermark.",
+  "size": "1024x1024",
+  "quality": "high",
+  "n": 1,
+  "output_format": "png",
+  "background": "transparent",
+  "edit": [
+    "C:\\MyAPPS\\CC\\projects\\motion-kit-promo\\assets\\ref-whale.png"
+  ],
+  "usage": {
+    "input_tokens": 571,
+    "output_tokens": 6500,
+    "total_tokens": 7071,
+    "input_tokens_details": {
+      "text_tokens": 102,
+      "image_tokens": 469,
+      "cached_tokens": 0
+    },
+    "output_tokens_details": {
+      "text_tokens": 0,
+      "image_tokens": 6500,
+      "reasoning_tokens": 0
+    }
+  }
+}

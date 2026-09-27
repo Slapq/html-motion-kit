@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>__TITLE__</title>
+  <link rel="stylesheet" href="../../engine/base.css">
+  <style>
+    /* 类名按章节命名空间，别跨章节重名（docs/lessons.md §2.5） */
+    .wrap { position: absolute; left: 160px; right: 160px; top: 0; bottom: 150px; display: flex; flex-direction: column; justify-content: center; }
+    .wrap.mid { align-items: center; text-align: center; }
+    .points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 56px; }
+    .point { padding: 36px 36px 40px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 18px 48px rgba(16,24,40,.06); }
+    .point b { display: block; font-size: 20px; font-weight: 600; color: color-mix(in srgb, var(--accent) 80%, var(--fg)); letter-spacing: .12em; }
+    .point h3 { margin: 14px 0 0; font-size: 38px; font-weight: 700; }
+    /* 每个场景/章节左上角都有一份，data-carry 让它在交界处飞过去，不是整屏换掉（docs/lessons.md §3.4） */
+    .brand { position: absolute; left: 160px; top: 96px; font-size: 26px; font-weight: 700; letter-spacing: .08em; color: var(--accent); }
+    .point p { margin: 12px 0 0; font-size: 26px; line-height: 1.5; color: var(--muted); }
+  </style>
+</head>
+<body>
+<script type="module">
+  import { createVideo, fx } from '../../engine/index.js';
+
+  // 连续模式：章节横排在一条长画布上，镜头自动平移（限速），背景和进度轴全程不停。
+  // 章节局部时间 0 = 镜头开始驶向本章；内容在 ctx.arrive（镜头到位）之前就开始入场。
+  // rhythm：anchor = 节拍点；dense = 信息密集；breathing = 留白（≤ 全片 30%，不能连着）。
+  // 光标主线：在 build 里调 ctx.cursor([{ to: el, click: true }, …])，全片共用一个光标（模板 tutorial 有完整示例）。
+  await createVideo({
+    width: 1920, height: 1080, fps: 30,
+    look: 'light',
+    theme: { accent: '#1a73e8' },
+    background: 'network',
+    progress: true,
+    chapters: [
+      {
+        id: 'intro', title: '开场', dur: 4.5, rhythm: 'anchor',
+        html: `
+          <div class="wrap mid">
+            <span class="kicker">NEW</span>
+            <h1 class="h1">__TITLE__</h1>
+            <p class="lede">一句话说清楚它是什么</p>
+          </div>
+          <span class="brand" data-carry="brand">__TITLE__</span>`,
+        build(tl, el) {
+          tl.from(el.querySelector('.kicker'), { opacity: 0, y: 16 }, { at: 0.2, dur: 0.7, ease: 'outCubic' });
+          fx.textIn(tl, el.querySelector('.h1'), { at: 0.35, preset: 'line', sfx: 'rise' });
+          fx.textIn(tl, el.querySelector('.lede'), { at: 0.75, preset: 'line' });
+        },
+      },
+      {
+        id: 'points', title: '要点', dur: 6, rhythm: 'dense',
+        html: `
+          <div class="wrap">
+            <h2 class="h2">三件事</h2>
+            <p class="sub">每条一句话，不要写成段落</p>
+            <div class="points">
+              <div class="point"><b>01</b><h3>要点一</h3><p>补充说明一行</p></div>
+              <div class="point"><b>02</b><h3>要点二</h3><p>补充说明一行</p></div>
+              <div class="point"><b>03</b><h3>要点三</h3><p>补充说明一行</p></div>
+            </div>
+          </div>
+          <span class="brand" data-carry="brand">__TITLE__</span>`,
+        build(tl, el, ctx) {
+          fx.textIn(tl, el.querySelector('.h2'), { at: 0.5, preset: 'line' });
+          fx.textIn(tl, el.querySelector('.sub'), { at: 0.8, preset: 'fade' });
+          fx.staggerIn(tl, el.querySelectorAll('.point'), { at: ctx.arrive - 0.3, stagger: 0.25, dur: 0.8, from: { y: 36, opacity: 0 }, sfx: 'blip' });
+          tl.caption('字幕文本', ctx.arrive + 0.8, 3);
+        },
+      },
+      {
+        id: 'outro', title: '结尾', dur: 4.5, rhythm: 'anchor',
+        html: `
+          <div class="wrap mid">
+            <h2 class="h2">谢谢观看</h2>
+            <p class="lede">一行行动号召</p>
+            <p class="sub">example.com</p>
+          </div>
+          <span class="brand" data-carry="brand">__TITLE__</span>`,
+        build(tl, el) {
+          fx.textIn(tl, el.querySelector('.h2'), { at: 0.5, preset: 'line' });
+          fx.textIn(tl, el.querySelector('.lede'), { at: 0.85, preset: 'line' });
+          fx.textIn(tl, el.querySelector('.sub'), { at: 1.15, preset: 'fade' });
+        },
+      },
+    ],
+  });
+</script>
+</body>
+</html>

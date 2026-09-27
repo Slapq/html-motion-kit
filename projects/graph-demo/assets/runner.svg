@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="630" viewBox="0 0 420 630">
+  <defs>
+    <pattern id="dots" width="9" height="9" patternUnits="userSpaceOnUse">
+      <circle cx="4.5" cy="4.5" r="2.1" fill="#07080a"/>
+    </pattern>
+    <pattern id="stripe" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="6" height="12" fill="#07080a"/>
+    </pattern>
+  </defs>
+  <g stroke="#07080a" stroke-width="5" stroke-linejoin="round">
+    <!-- legs -->
+    <path d="M162 380 L200 380 L196 520 L204 600 L150 606 L158 520 Z" fill="#ece9df"/>
+    <path d="M220 380 L258 380 L262 520 L270 606 L216 600 L224 520 Z" fill="#ece9df"/>
+    <path d="M158 470 L198 470 L196 520 L158 520 Z" fill="#ff2e88"/>
+    <path d="M222 470 L262 470 L262 520 L224 520 Z" fill="#c6ff00"/>
+    <!-- shoes -->
+    <path d="M140 598 L206 594 L210 626 L128 626 Z" fill="#c6ff00"/>
+    <path d="M214 594 L280 598 L292 626 L210 626 Z" fill="#ff2e88"/>
+    <!-- arms -->
+    <path d="M118 200 L150 196 L146 330 L130 400 L100 394 L112 330 Z" fill="#ece9df"/>
+    <path d="M270 196 L302 200 L308 330 L320 394 L290 400 L274 330 Z" fill="#ece9df"/>
+    <path d="M100 394 L130 400 L126 428 L98 424 Z" fill="#07080a"/>
+    <path d="M290 400 L320 394 L322 424 L294 428 Z" fill="#07080a"/>
+    <path d="M112 280 L148 280 L146 306 L110 306 Z" fill="#c6ff00"/>
+    <!-- torso -->
+    <path d="M146 186 L274 186 L286 250 L262 390 L158 390 L134 250 Z" fill="#ece9df"/>
+    <path d="M146 186 L274 186 L280 222 L140 222 Z" fill="url(#stripe)"/>
+    <path d="M150 250 L270 250 L262 300 L158 300 Z" fill="#c6ff00"/>
+    <path d="M232 300 L266 300 L262 390 L226 390 Z" fill="url(#stripe)"/>
+    <path d="M158 340 L210 340 L210 390 L158 390 Z" fill="#ff2e88"/>
+    <!-- neck -->
+    <rect x="184" y="150" width="52" height="42" fill="#5a5f68"/>
+    <!-- helmet -->
+    <path d="M146 60 Q210 20 274 60 L282 132 L256 164 L164 164 L138 132 Z" fill="#ece9df"/>
+    <path d="M150 92 L270 92 L262 128 L158 128 Z" fill="#07080a"/>
+    <path d="M166 102 L254 102 L250 118 L170 118 Z" fill="#c6ff00" stroke="none"/>
+    <path d="M232 40 Q258 48 274 60 L270 88 L236 88 Z" fill="#ff2e88"/>
+    <path d="M164 140 L256 140 L250 162 L170 162 Z" fill="url(#dots)" stroke="none"/>
+  </g>
+  <!-- graphic marks -->
+  <g font-family="Bahnschrift, Arial Narrow, sans-serif" font-weight="700">
+    <text x="164" y="289" font-size="34" fill="#07080a">01</text>
+    <text x="244" y="84" font-size="20" fill="#07080a">M</text>
+    <text x="163" y="382" font-size="14" fill="#07080a">MRTN</text>
+  </g>
+  <path d="M154 212 L200 212" stroke="#c6ff00" stroke-width="4"/>
+  <path d="M222 212 L266 212" stroke="#ff2e88" stroke-width="4"/>
+</svg>

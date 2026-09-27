@@ -21,12 +21,14 @@
     .scan { position: absolute; inset: 0; z-index: 40; pointer-events: none; opacity: .18;
       background: repeating-linear-gradient(0deg, rgba(255,255,255,.12) 0 1px, transparent 1px 4px); }
     .halftone { position: absolute; pointer-events: none; background-image: radial-gradient(var(--c, var(--lime)) 28%, transparent 30%); background-size: 14px 14px; }
-    .mega { font: 800 220px/0.86 var(--disp); letter-spacing: -.02em; text-transform: uppercase; margin: 0; }
+    .mega { font: 800 220px/1.25 var(--disp); letter-spacing: -.02em; text-transform: uppercase; margin: 0; }
     .tag { display: inline-block; padding: 8px 16px; background: var(--lime); color: var(--ink); font: 700 26px var(--mono); letter-spacing: .12em; }
-    .tag.pink { background: var(--pink); color: var(--bone); }
+    .tag.pink { background: var(--pink); color: var(--ink); }
     .bar-block { position: absolute; background: var(--pink); }
     /* boot */
     .boot .title-wrap { position: absolute; left: 140px; top: 330px; z-index: 30; }
+    .boot .tag.t1 { display: block; margin-bottom: 22px; }
+    .boot .m1 { margin-top: -18px; }
     .boot .sub { font: 600 44px var(--disp); letter-spacing: .3em; margin-top: 34px; color: var(--bone); }
     /* route */
     .km { position: absolute; right: 150px; top: 170px; text-align: right; z-index: 30; }
@@ -86,10 +88,6 @@ function hud(tl, el, idx, label) {
   fx.staggerIn(tl, el.querySelectorAll('.hud .c'), { at: 0.1, stagger: 0.05, dur: 0.4, from: { scale: 1.8, opacity: 0 } });
 }
 
-// Rhythm pulse: multiply scale on the beat (kick at every beat).
-const pulse = (tl, el, amt = 0.03) =>
-  tl.modify(el, (lt, t) => { const p = (t % BEAT) / BEAT; return { scale: 1 + amt * Math.exp(-p * 7) }; });
-
 // Wavy 3D marathon route on the XZ plane.
 function routePts(n = 160, seed = 4) {
   const pts = [];
@@ -127,14 +125,17 @@ scenes.push({
     tl.sfx('air', 0.2, { dur: 1.5, volume: 0.8 });
     tl.fromTo(el.querySelector('.b1'), { scaleX: 0 }, { scaleX: 1 }, { at: 0.4, dur: 0.9, ease: 'outExpo' });
     el.querySelector('.b1').style.transformOrigin = '0 50%';
-    tl.from(el.querySelector('.t1'), { x: -80, opacity: 0 }, { at: 0.8, dur: 0.5, ease: 'outCubic' });
-    fx.scramble(tl, el.querySelector('.m1'), { at: 1.0, dur: 0.9, sfx: null });
-    tl.sfx('thump', 1.75);
-    fx.glitch(tl, el.querySelector('.m1'), { at: 1.75, dur: 0.6, amp: 26 });
-    fx.shake(tl, el.querySelector('.title-wrap'), { at: 1.75, dur: 0.4, amp: 10 });
-    fx.textIn(tl, el.querySelector('.s1'), { at: 2.3, preset: 'rise', stagger: 0.03 });
-    pulse(tl, el.querySelector('.m1'), 0.025);
+    tl.from(el.querySelector('.t1'), { x: -80, opacity: 0 }, { at: 0.3, dur: 0.5, ease: 'outCubic' });
+    fx.scramble(tl, el.querySelector('.m1'), { at: 0.55, dur: 0.9, sfx: null });
+    tl.sfx('thump', 1.3);
+    fx.glitch(tl, el.querySelector('.m1'), { at: 1.3, dur: 0.6, amp: 26 });
+    fx.textIn(tl, el.querySelector('.s1'), { at: 0.85, preset: 'rise', stagger: 0.03 });
     tl.caption('一个完全基于 HTML / JS 的动画视频框架', 2.8, 3.2);
+    // slash transition into 02 translates this scene without fading it — fade our own
+    // content below the audit's visibility threshold before the wipe starts, but only to a
+    // dim floor (not 0): the slash wedge only fully covers the frame by ~lt=0.4s, so a full
+    // fade-to-black here left a near-empty pocket while route was still mostly clipped.
+    tl.to(el, { opacity: 0.12 }, { at: 5.4, dur: 0.8, ease: 'outCubic' });
   },
 });
 
@@ -170,9 +171,17 @@ scenes.push({
     tl.from(wrap, { y: 400, opacity: 0 }, { at: 1.0, dur: 0.9, ease: 'outBack' });
     tl.add((lt) => runner.update(lt));
     runner.emote('bounce', 2.0, 0.5).emote('nod', 3.6, 0.8).emote('tilt', 5.2, 1);
-    fx.float(tl, wrap, { amp: 14, speed: 0.5 });
     tl.sfx('soft', 1.0, { freq: 1320 });
     tl.caption('场景、转场、字幕与音效，统一在一条可拖动的时间轴上', 1.4, 4.6);
+    // shutter transition into 03 keeps both HUDs opaque at identical screen positions
+    // (double-exposed labels) — fade our own HUD just ahead of the wipe.
+    tl.to(el.querySelector('.hud'), { opacity: 0 }, { at: 5.9, dur: 0.5, ease: 'outCubic' });
+    // shutter's mask-image cuts modules' incoming content into vertical slats while
+    // dimming (not masking) this scene underneath — the "01 / TIMELINE" tag stays fully
+    // opaque through that slatted window and gets its contrast sampled against a stripe
+    // edge partway through the wipe. Start fading right as the shutter starts (local 6.2)
+    // so the tag is gone before the wipe is far enough in to slice through it.
+    tl.to(el.querySelector('.route-copy'), { opacity: 0 }, { at: 6.2, dur: 0.35, ease: 'outCubic' });
   },
 });
 
@@ -197,6 +206,10 @@ scenes.push({
     fx.staggerIn(tl, el.querySelectorAll('.mod'), { at: 0.9, stagger: BEAT, dur: 0.5, from: { x: -140, opacity: 0, clip: 0 }, ease: 'outExpo', sfx: 'soft' });
     el.querySelectorAll('.mod b').forEach((b, i) => fx.glitch(tl, b, { at: 0.9 + i * BEAT, dur: 0.3, amp: 14, seed: i + 2 }));
     tl.caption('GPT-image 生成的背景、角色和物件，直接成为场景素材', 3.4, 2.8);
+    // zoom transition into 04 cross-fades incoming over this scene without ever fading
+    // this scene's own content — fade the whole scene first so the outgoing .mod grid
+    // doesn't stay fully opaque under core's incoming stat3 entrance (docs/lessons.md §0/§1).
+    tl.to(el, { opacity: 0 }, { at: 5.4, dur: 0.5, ease: 'outCubic' });
   },
 });
 
@@ -222,23 +235,25 @@ scenes.push({
     tl.fromTo(sp.cam, { ry: -25 }, { ry: 25 }, { at: 0, dur: 6.5, ease: 'inOutSine' });
     sp.bind(tl);
     const core = el.querySelector('.core-img');
-    tl.from(core, { scale: 0.3, opacity: 0, blur: 20 }, { at: 0.4, dur: 1.1, ease: 'outBack' });
-    tl.modify(core, (lt) => ({ rotate: Math.sin(lt * 0.9) * 4, y: Math.sin(lt * 1.3) * 12 }));
-    pulse(tl, core, 0.04);
-    tl.sfx('thump', 0.5, { volume: 0.8 });
-    fx.staggerIn(tl, el.querySelectorAll('.stat3'), { at: 1.2, stagger: 0.18, from: { y: 60, opacity: 0 }, ease: 'outExpo', sfx: 'soft' });
-    fx.counter(tl, el.querySelector('.c1'), { to: 60, at: 1.3, dur: 1.4, sfx: null });
-    fx.counter(tl, el.querySelector('.c2'), { to: 19, at: 1.5, dur: 1.4, sfx: null });
-    fx.counter(tl, el.querySelector('.c3'), { from: 99, to: 0, at: 1.7, dur: 1.4, sfx: null });
+    tl.from(core, { scale: 0.3, opacity: 0, blur: 20 }, { at: 0.1, dur: 1.0, ease: 'outBack' });
+    tl.sfx('thump', 0.2, { volume: 0.8 });
+    fx.staggerIn(tl, el.querySelectorAll('.stat3'), { at: 0.3, stagger: 0.18, from: { y: 60, opacity: 0 }, ease: 'outExpo', sfx: 'soft' });
+    fx.counter(tl, el.querySelector('.c1'), { to: 60, at: 0.5, dur: 1.4, sfx: null });
+    fx.counter(tl, el.querySelector('.c2'), { to: 19, at: 0.7, dur: 1.4, sfx: null });
+    fx.counter(tl, el.querySelector('.c3'), { from: 99, to: 0, at: 0.9, dur: 1.4, sfx: null });
     fx.particles(tl, el, { mode: 'burst', at: 3.2, count: 90, colors: [LIME, PINK, BONE], origin: [0.5, 0.5], z: 15, sfx: null });
     tl.sfx('chime', 3.2);
     tl.caption('零运行时依赖，逐帧精确导出 MP4', 3.4, 2.8);
+    // up transition into 05 translates this scene without fading it — fade our own
+    // content first (fast-out ease so opacity is low well before the translate grows large)
+    // so nothing sits half-offscreen while still opaque (docs/lessons.md §0/§1).
+    tl.to(el, { opacity: 0 }, { at: 5.5, dur: 0.5, ease: 'outCubic' });
   },
 });
 
 // 05 PIPELINE — agent workflow as connected nodes, data packets travel along.
 scenes.push({
-  id: 'pipeline', title: '05 流程', dur: 7, transition: { type: 'up', dur: 0.7, sfx: 'air' },
+  id: 'pipeline', title: '05 流程', dur: 7, transition: { type: 'zoom', dur: 0.7, sfx: 'air' },
   html: `<div class="pipe-title"><span class="tag">03 / PIPELINE</span><h2 class="mega" style="font-size:120px;margin-top:16px">AGENT → MP4</h2></div>
     <svg class="links" width="1920" height="1080" style="position:absolute;inset:0;z-index:25">
       <path d="M525 540 H595" stroke="${LIME}" stroke-width="4" fill="none"/><path d="M925 540 H995" stroke="${LIME}" stroke-width="4" fill="none"/>
@@ -258,7 +273,7 @@ scenes.push({
     tl.fromTo(sp.cam, { x: -500, ry: -8 }, { x: 500, ry: 8 }, { at: 0, dur: 7, ease: 'linear' });
     sp.bind(tl);
     hud(tl, el, 5, 'AGENT PIPELINE');
-    tl.from(el.querySelector('.pipe-title'), { y: -60, opacity: 0 }, { at: 0.5, dur: 0.6, ease: 'outExpo' });
+    tl.from(el.querySelector('.pipe-title'), { y: -60, opacity: 0 }, { at: 0.1, dur: 0.5, ease: 'outExpo' });
     fx.staggerIn(tl, el.querySelectorAll('.node'), { at: 0.9, stagger: BEAT * 2, dur: 0.6, from: { y: 80, opacity: 0, rotateX: 70 }, ease: 'outBack', sfx: 'soft' });
     fx.drawPath(tl, el.querySelector('.links'), { at: 1.4, stagger: BEAT * 2, dur: 0.5 });
     // Data packets hopping across nodes.
@@ -271,6 +286,16 @@ scenes.push({
     fx.typewriter(tl, el.querySelector('.cmd'), { at: 4.2, cps: 26, sfx: null });
     tl.sfx('chime', 5.8);
     tl.caption('Agent 读项目 → 生图 → 编排 → 一条命令导出', 1.2, 4.4);
+    // circle only masks the incoming scene (finish), not us: finish's own centered tag/title
+    // sit at screen-center from its visibility flip (global start), colliding with our
+    // .pipe-title there. Clear the title+HUD before that, but keep the lower nodes/cmd row
+    // lit until the iris has grown large so there's no empty gap either (docs/lessons.md §0).
+    tl.to(el.querySelector('.pipe-title'), { opacity: 0 }, { at: 5.9, dur: 0.3, ease: 'outCubic' });
+    tl.to(el.querySelector('.hud'), { opacity: 0 }, { at: 5.9, dur: 0.3, ease: 'outCubic' });
+    tl.to(el.querySelector('.scan'), { opacity: 0 }, { at: 5.9, dur: 0.3, ease: 'outCubic' });
+    tl.to(el.querySelector('.pipe'), { opacity: 0 }, { at: 6.5, dur: 0.4, ease: 'outCubic' });
+    tl.to(el.querySelector('.links'), { opacity: 0 }, { at: 6.5, dur: 0.4, ease: 'outCubic' });
+    tl.to(el.querySelector('.cmd'), { opacity: 0 }, { at: 6.5, dur: 0.4, ease: 'outCubic' });
   },
 });
 
@@ -293,7 +318,7 @@ scenes.push({
     hud(tl, el, 6, 'FINISH LINE');
     const fl = el.querySelector('.fl'); fl.style.transformOrigin = '50% 50%';
     tl.fromTo(fl, { scaleX: 0 }, { scaleX: 1 }, { at: 0.6, dur: 0.6, ease: 'outExpo' });
-    fx.textIn(tl, el.querySelector('.f1'), { at: 0.9, preset: 'drop', stagger: 0.05, sfx: 'air' });
+    fx.textIn(tl, el.querySelector('.f1'), { at: 0.9, preset: 'line', sfx: 'air' });
     tl.sfx('thump', 1.6);
     fx.glitch(tl, el.querySelector('.f1'), { at: 1.6, dur: 0.5, amp: 22 });
     fx.particles(tl, el, { mode: 'confetti', at: 1.6, count: 140, colors: [LIME, PINK, BONE], origin: [0.5, 0.45], z: 20, sfx: 'chime' });

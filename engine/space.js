@@ -48,12 +48,43 @@ export class Space3D {
   }
   _fog(d) { const [a, b] = this.fog; return clamp(1 - (d - a) / (b - a)); }
 
+  // Hand-drawn strokes: sp.rough = { amp, passes, seed, boil, hatch } or set by a style with `rough` (style.js).
+  _rough(t) {
+    let R = this.rough ?? null;
+    for (const f of Object.values(this.cv._roughFns || {})) { const r = f(t); if (r) R = r; }
+    if (!R || R === true) return R ? { amp: 1.5, passes: 2, seed: 1 } : null;
+    if (R.boil) R = { ...R, seed: (R.seed ?? 1) + Math.floor(t * R.boil) };
+    return R.amp > 0 ? R : null;
+  }
+  // jittered stroke a→b (seeded per segment, so it only changes when the seed boils)
+  _rline(g, a, b, R, key) {
+    const r = rng(((R.seed ?? 1) * 7919 + key * 104729) >>> 0), L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const amp = R.amp * Math.min(1, L / 40) + R.amp * 0.3, j = () => (r() - 0.5) * 2 * amp;
+    for (let k = 0; k < (R.passes ?? 1); k++) {
+      const nx = -(b[1] - a[1]) / (L || 1), ny = (b[0] - a[0]) / (L || 1), bow = j() * 0.8;
+      const m1 = 0.3 + r() * 0.15, m2 = 0.6 + r() * 0.15;
+      g.beginPath(); g.moveTo(a[0] + j(), a[1] + j());
+      g.bezierCurveTo(a[0] + (b[0] - a[0]) * m1 + nx * bow + j(), a[1] + (b[1] - a[1]) * m1 + ny * bow + j(),
+        a[0] + (b[0] - a[0]) * m2 + nx * bow + j(), a[1] + (b[1] - a[1]) * m2 + ny * bow + j(), b[0] + j(), b[1] + j());
+      g.stroke();
+    }
+  }
+  _rhatch(g, P, R, key) {
+    const xs = P.map((p) => p[0]), ys = P.map((p) => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const a = ((R.angle ?? 45) * Math.PI) / 180, gap = R.gap ?? 7, c = Math.cos(a), s = Math.sin(a), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, rad = Math.hypot(x1 - x0, y1 - y0) / 2;
+    g.save(); g.beginPath(); P.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath(); g.clip();
+    const lw = g.lineWidth; g.lineWidth = Math.max(0.6, lw * 0.6);
+    for (let d = -rad, k = 0; d <= rad; d += gap, k++)
+      this._rline(g, [cx + c * -rad - s * d, cy + s * -rad + c * d], [cx + c * rad - s * d, cy + s * rad + c * d], { ...R, passes: 1 }, key * 131 + k);
+    g.lineWidth = lw; g.restore();
+  }
+
   render(lt, t) {
-    const g = this.g;
+    const g = this.g, R = this._rough(t);
     g.clearRect(0, 0, this.W, this.H);
     g.globalCompositeOperation = this.blend;
-    for (const o of this.objs) {
-      const op = o.opacity ?? 1;
+    for (let oi = 0; oi < this.objs.length; oi++) {
+      const o = this.objs[oi], op = o.opacity ?? 1;
       if (op <= 0.001) continue;
       if (o.update) o.update(lt, t, o);
       const P = o.pts.map((p) => this.project(this._world(o, p)));
@@ -82,14 +113,24 @@ export class Space3D {
           if (f < 1) b = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, b[2], b[3]];
           g.globalAlpha = op * this._fog((a[2] + b[2]) / 2);
           g.lineWidth = Math.max(0.5, (o.width || 1.5) * (o.scaleWidth === false ? 1 : Math.min(3, (a[3] + b[3]) / 2)));
-          g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke();
+          if (R && o.rough !== false) this._rline(g, a, b, R, oi * 9973 + i);
+          else { g.beginPath(); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); g.stroke(); }
         }
       } else if (o.type === 'plane') {
         if (P.some((p) => !p)) continue;
         g.globalAlpha = op * this._fog(P.reduce((s, p) => s + p[2], 0) / P.length);
-        g.beginPath(); P.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath();
-        if (o.fill !== false) g.fill();
-        if (o.stroke) { g.strokeStyle = o.stroke; g.lineWidth = o.width || 1; g.stroke(); }
+        if (R && o.rough !== false) {
+          // hand-drawn: hatch instead of a flat fill, wobbly outline
+          g.lineWidth = o.width || 1.2;
+          if (o.fill !== false && R.hatch) this._rhatch(g, P, R, oi);
+          else if (o.fill !== false) { g.beginPath(); P.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath(); g.fill(); }
+          if (o.stroke) g.strokeStyle = o.stroke;
+          if (o.stroke || R.hatch) P.forEach((p, i) => this._rline(g, p, P[(i + 1) % P.length], R, oi * 7 + i));
+        } else {
+          g.beginPath(); P.forEach((p, i) => (i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]))); g.closePath();
+          if (o.fill !== false) g.fill();
+          if (o.stroke) { g.strokeStyle = o.stroke; g.lineWidth = o.width || 1; g.stroke(); }
+        }
       }
     }
     g.globalAlpha = 1;

@@ -35,21 +35,37 @@ export function splitText(el, by = 'char') {
   return (el._split = spans);
 }
 
-// Presets: 'rise' | 'drop' | 'blur' | 'pop' | 'flip' | 'wave'
-export function textIn(tl, el, { at = '+0', by = 'char', stagger = 0.035, dur = 0.6, preset = 'rise', sfx } = {}) {
-  const spans = splitText(el, by);
-  const P = {
-    rise: [{ y: 40, opacity: 0 }, 'outBack'],
-    drop: [{ y: -50, opacity: 0, rotate: -8 }, 'outBounce'],
-    blur: [{ blur: 14, opacity: 0, scale: 1.3 }, 'outCubic'],
-    pop: [{ scale: 0, opacity: 0 }, 'outBack'],
-    flip: [{ rotateX: -90, opacity: 0, y: 20 }, 'outCubic'],
-    wave: [{ y: 30, opacity: 0, scale: 0.6 }, 'outElastic'],
-  }[preset];
+// Presets: 'line' | 'fade' | 'rise' | 'drop' | 'blur' | 'pop' | 'flip' | 'wave'
+// 'line' and 'fade' animate the whole element (no splitting) — use them for display type (>64px),
+// where per-character blur/scale smears letters into each other (docs/lessons.md §3.3).
+const TEXT_PRESETS = {
+  line: [{ y: 28, opacity: 0 }, 'outCubic', 0.95],
+  fade: [{ opacity: 0 }, 'outQuad', 0.8],
+  rise: [{ y: 40, opacity: 0 }, 'outBack'],
+  drop: [{ y: -50, opacity: 0, rotate: -8 }, 'outBounce'],
+  blur: [{ blur: 8, opacity: 0, y: 14 }, 'outCubic'],
+  pop: [{ scale: 0, opacity: 0 }, 'outBack'],
+  flip: [{ rotateX: -90, opacity: 0, y: 20 }, 'outCubic'],
+  wave: [{ y: 30, opacity: 0, scale: 0.6 }, 'outElastic'],
+};
+export function textIn(tl, el, { at = '+0', by = 'char', stagger = 0.035, dur, preset = 'rise', ease, sfx } = {}) {
+  el = $(el);
+  if (!el) throw new Error('fx.textIn: element not found');
+  const P = TEXT_PRESETS[preset];
+  if (!P) throw new Error(`fx.textIn: unknown preset "${preset}"; available: ${Object.keys(TEXT_PRESETS).join(' ')}`);
   const t0 = tl._t(at);
-  spans.forEach((s, i) => tl.from(s, P[0], { at: t0 + i * stagger, dur, ease: P[1] }));
+  if (P[2]) {
+    const d = dur ?? P[2];
+    tl.from(el, P[0], { at: t0, dur: d, ease: ease || P[1] });
+    if (sfx) tl.sfx(sfx, t0);
+    tl._mark(t0, t0 + d);
+    return tl;
+  }
+  const d = dur ?? 0.6;
+  const spans = splitText(el, by);
+  spans.forEach((s, i) => tl.from(s, P[0], { at: t0 + i * stagger, dur: d, ease: ease || P[1] }));
   if (sfx) tl.sfx(sfx, t0);
-  tl._mark(t0, t0 + (spans.length - 1) * stagger + dur);
+  tl._mark(t0, t0 + (spans.length - 1) * stagger + d);
   return tl;
 }
 
@@ -194,6 +210,7 @@ export function drawPath(tl, el, { at = '+0', dur = 1.2, stagger = 0.1, ease = '
 
 // Canvas particle field. mode: 'dust' | 'burst' | 'confetti' | 'stars' | 'bokeh'
 export function particles(tl, stage, { mode = 'dust', at = 0, count = 80, color = '#ffffff', colors, seed = 3, origin = [0.5, 0.5], dur = Infinity, z = 1, sfx } = {}) {
+  if (!['dust', 'burst', 'confetti', 'stars', 'bokeh'].includes(mode)) throw new Error(`fx.particles: unknown mode "${mode}"; available: dust burst confetti stars bokeh`);
   const st = $(stage);
   const W = st.offsetWidth || 1920, H = st.offsetHeight || 1080;
   const cv = document.createElement('canvas');

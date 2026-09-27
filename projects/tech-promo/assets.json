@@ -1,0 +1,12 @@
+{
+  "defaults": {
+    "quality": "high",
+    "size": "1536x1024"
+  },
+  "images": [
+    {
+      "out": "assets/bg.png",
+      "prompt": "Wide cinematic abstract background, dark navy gradient, soft glowing shapes, empty center for a title, no text, no logos"
+    }
+  ]
+}

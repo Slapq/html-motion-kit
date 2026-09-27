@@ -24,10 +24,11 @@
     /* scene 3: 3D + puppet */
     .runner { position: absolute; right: 90px; bottom: 0; z-index: 3; }
     .hud3 { position: absolute; left: 80px; bottom: 70px; font: 24px/1.6 var(--mono); color: #cbd5e1; white-space: pre; z-index: 4; }
+    .hud3 b { display: block; font-weight: 400; }
     /* scene 4: operators & presets */
     .t4 { position: absolute; left: 0; right: 0; top: 70px; text-align: center; font-size: 84px; font-weight: 800; margin: 0; }
     .sub4 { position: absolute; left: 0; right: 0; top: 190px; text-align: center; font-size: 38px; color: var(--muted); margin: 0; }
-    .num { position: absolute; left: 160px; top: 330px; font: 800 120px/1 var(--mono); color: var(--accent); }
+    .num { position: absolute; left: 160px; top: 330px; font: 800 120px/1.2 var(--mono); color: var(--accent); }
     .tw { position: absolute; left: 160px; top: 500px; width: 900px; font: 34px/1.4 var(--mono); color: #e2e8f0; }
     .sc { position: absolute; left: 160px; top: 600px; font: 34px var(--mono); color: #ff2e88; }
     .chips { position: absolute; left: 160px; top: 760px; display: flex; gap: 22px; }
@@ -49,7 +50,7 @@
 <body>
 <script type="module">
   import {
-    createVideo, Space3D, MeshPuppet, Graph, clamp, ShaderLayer, registerEnvelope,
+    createVideo, Space3D, MeshPuppet, Graph, clamp, ShaderLayer, registerEnvelope, fx,
     defineOp, definePreset, registerBehaviour, registerDistribution, registerFalloff,
   } from '../../engine/index.js';
 
@@ -104,8 +105,11 @@
         { kind: 'node', id: 'beat', type: 'channel', params: { v: { value: 0, fx: [{ type: 'pulse', bpm: 100, amp: 1, decay: 6 }] } } },
         { kind: 'node', id: 'beatdot', type: 'layer', target: '.beatdot', params: { scale: { link: 'beat.v', mul: 0.9, add: 1 } } },
         ...ROWS.map(([, x, extra], k) => ({ kind: 'node', id: `r${k}`, type: 'layer', target: `.r${k}`, params: { x, ...(extra ? { y: extra } : {}) } })),
-        { kind: 'preset', preset: 'popIn', target: '.row', params: { at: 0.2, stagger: 0.05 } },
+        { kind: 'op', op: 'staggerIn', target: '.row', params: { at: 0.2, stagger: 0.05, dur: 0.5, from: { x: -60, opacity: 0 }, ease: 'outCubic' } },
       ]);
+      // Fade this scene out before the next scene's transition starts overlapping it
+      // (docs/lessons.md 3.4: leave() before the incoming transition, not a hard cut).
+      tl.to(el, { opacity: 0 }, { at: 9.0, dur: 0.4, ease: 'outQuad' });
     },
   };
 
@@ -126,7 +130,7 @@
   ];
   const panelPos = (k) => [60 + (k % 3) * 610, 140 + Math.floor(k / 3) * 440];
   const scene2 = {
-    id: 'dup', title: '复制器', dur: 9, transition: 'slide', className: 'bg-grad',
+    id: 'dup', title: '复制器', dur: 9, transition: 'shutter', className: 'bg-grad',
     html: `<h2 class="h">复制器<small>分布 × 衰减 → 每个克隆有 i / u / w / px / py</small></h2>` +
       PANELS.map(([name], k) => { const [x, y] = panelPos(k); return `<div class="panel p${k}" style="left:${x}px;top:${y}px"><p>${name}</p></div>`; }).join(''),
     build(tl, el) {
@@ -137,13 +141,15 @@
           : { scale: { value: 1.8, fx: [{ type: 'falloff', rest: 0.3 }] }, opacity: { value: 1, fx: [{ type: 'falloff', rest: 0.15 }] } };
         g.node({ id: `dup${k}`, type: 'duplicator', parent: `.p${k}`, html: `<i class="${cls}"></i>`, count, distribution, falloff, align, params });
       });
+      tl.to(el, { opacity: 0 }, { at: 8.17, dur: 0.4, ease: 'outQuad' });
     },
   };
 
   // ---------------------------------------------------------------- scene 3: every model is manipulable
   const scene3 = {
     id: 'models', title: '模型操纵', dur: 9, transition: 'zoom', className: 'bg-grad',
-    html: `<h2 class="h" style="z-index:4">模型操纵<small>Space3D 物体 / 相机 / 角色参数 = 节点</small></h2><div class="hud3"></div>`,
+    html: `<h2 class="h" style="z-index:4">模型操纵<small>Space3D 物体 / 相机 / 角色参数 = 节点</small></h2>
+      <div class="hud3"><b class="hb0"></b><b class="hb1"></b><b class="hb2"></b><b class="hb3"></b></div>`,
     build(tl, el) {
       const sp = new Space3D(el, { fov: 900, fog: [400, 4200] });
       const floor = sp.add(Space3D.grid(3600, 200, { color: '#1e293b', y: 420, width: 1 }));
@@ -151,7 +157,7 @@
       const ring = sp.add(Space3D.ring(240, 120, { color: '#c6ff00', width: 3, x: -560, y: 120, rx: 72, progress: 0 }));
       sp.bind(tl);
       runner.el.classList.add('runner'); el.appendChild(runner.el); tl.add((lt) => runner.update(lt));
-      const hud = el.querySelector('.hud3');
+      const hb = ['.hb0', '.hb1', '.hb2', '.hb3'].map((s) => el.querySelector(s));
       const g = tl.graph({ root: el, stage: el, refs: { sp, floor, sphere, ring, runner } });
       g.add([
         { kind: 'node', id: 'beat3', type: 'channel', params: { v: { value: 0, fx: [{ type: 'pulse', bpm: 110, amp: 1, decay: 5 }] } } },
@@ -172,8 +178,12 @@
       // Live readout straight from the graph (pure reads, same values the renderer uses).
       const f = (v) => (typeof v === 'number' ? v.toFixed(2).padStart(8) : v);
       tl.add((lt, gt) => {
-        hud.textContent = `beat3.v    ${f(g.get('beat3.v', gt))}\ncam.ry     ${f(tl.valueAt(sp.cam, 'ry', gt))}\ncubes[13].s${f(tl.valueAt(sp.objs[3 + 13], 's', gt))}\nrunner.nod ${f(tl.valueAt(runner.params, 'nod', gt))}`;
+        hb[0].textContent = `beat3.v    ${f(g.get('beat3.v', gt))}`;
+        hb[1].textContent = `cam.ry     ${f(tl.valueAt(sp.cam, 'ry', gt))}`;
+        hb[2].textContent = `cubes[13].s${f(tl.valueAt(sp.objs[3 + 13], 's', gt))}`;
+        hb[3].textContent = `runner.nod ${f(tl.valueAt(runner.params, 'nod', gt))}`;
       });
+      tl.to(el, { opacity: 0 }, { at: 8.0, dur: 0.4, ease: 'outQuad' });
     },
   };
 
@@ -200,6 +210,9 @@
         { kind: 'op', op: 'particles', params: { mode: 'dust', count: 60, color: '#6ee7ff', seed: 5 } },
       ]);
       tl.op('float', el.querySelector('.orbit-c'), { amp: 14, speed: 0.3 }); // timeline sugar, same trace
+      // scene5's incoming transition is a plain opacity fade (not a mask reveal), which ramps in
+      // slower — start this leave-fade later/shorter so there's no empty seam between the two.
+      tl.to(el, { opacity: 0 }, { at: 8.39, dur: 0.3, ease: 'outQuad' });
     },
   };
 
@@ -210,6 +223,9 @@
       <h3 class="t5">tl.inspect()</h3><pre class="json"></pre><div class="stats5"></div>
       <canvas class="cv5" width="1000" height="560" aria-label="第一幕小球 x 曲线"></canvas><div class="legend"></div>`,
     build(tl, el) {
+      // Slow whole-scene drift so the frame keeps moving even while the curve
+      // draw and stat text are otherwise motionless (docs/lessons.md 3.4).
+      fx.kenBurns(tl, el, { at: 0, dur: 7, fromScale: 1, toScale: 1.012, x: [0, -6], y: [0, 4] });
       const ins = tl.inspect();
       // One line per distinct trace source: which target it moves and which props.
       const seen = new Set(), lines = [];
@@ -220,7 +236,7 @@
         lines.push({ target: t.target, src, props: Object.keys(t.props).join(',') || 'modifier' });
       }
       el.querySelector('.json').textContent = `// ${ins.duration}s · 每个运动的来源\n` +
-        lines.slice(0, 17).map((l) => `${l.target.slice(0, 18).padEnd(19)}${l.props.slice(0, 14).padEnd(15)}← ${l.src}`).join('\n');
+        lines.slice(0, 12).map((l) => `${l.target.slice(0, 18).padEnd(19)}${l.props.slice(0, 14).padEnd(15)}← ${l.src}`).join('\n');
       const srcs = new Set(ins.targets.flatMap((t) => [...t.mods.map((m) => m.src), ...Object.values(t.props).flat().map((p) => p.src)]).filter(Boolean));
       el.querySelector('.stats5').textContent =
         `targets ${ins.targets.length}   ops ${ins.ops.length}   graphs ${ins.graphs.length}\n` +
@@ -244,7 +260,7 @@
           c.stroke();
         });
       };
-      tl.add((lt) => draw(clamp(lt / 3)));
+      tl.add((lt) => draw(clamp(lt / 6.8)));
 
       // Round-trip: rebuild scene 1's graph from its JSON on a fresh timeline, compare values.
       const json = g1.toJSON();
@@ -257,6 +273,7 @@
         rows.map((k, j) => `■ ${ROWS[k][0]}`).join('   ') + '\n' +
         `Graph.fromJSON(scene1) → r5.x @1.3/4.7/8.2s ${probe.map(([a]) => a.toFixed(1)).join(' / ')}  ${ok ? '✓ 一致' : '✗ 不一致'}`;
       el.querySelectorAll('.legend').forEach((l) => { l.style.color = ok ? '#cbd5e1' : '#ff2e88'; });
+      tl.to(el, { opacity: 0 }, { at: 7.04, dur: 0.3, ease: 'outQuad' });
     },
   };
 

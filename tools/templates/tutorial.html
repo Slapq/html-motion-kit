@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>__TITLE__</title>
+  <link rel="stylesheet" href="../../engine/base.css">
+  <style>
+    /* 类名按章节命名空间，别跨章节重名（docs/lessons.md §2.5） */
+    .wrap { position: absolute; left: 160px; right: 160px; top: 0; bottom: 150px; display: flex; flex-direction: column; justify-content: center; }
+    .wrap.mid { align-items: center; text-align: center; }
+    .goal { position: absolute; left: 160px; top: 96px; padding: 12px 24px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 26px; color: var(--muted); }
+    .side { position: absolute; left: 160px; top: 260px; width: 480px; }
+    .side p { margin: 18px 0 0; font-size: 30px; line-height: 1.6; color: var(--muted); }
+    .app { position: absolute; left: 720px; top: 220px; width: 1040px; min-height: 560px; background: #fff; border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 24px 64px rgba(16,24,40,.08); overflow: hidden; }
+    .app .bar { height: 52px; border-bottom: 1px solid var(--line); display: flex; gap: 10px; align-items: center; padding: 0 20px; }
+    .app .bar i { width: 14px; height: 14px; border-radius: 50%; background: #e2e6ee; }
+    .app .body { padding: 48px; display: grid; gap: 28px; }
+    .field { min-height: 72px; border-radius: 12px; background: #f5f7fb; border: 1px solid var(--line); font-size: 30px; padding: 18px 22px; font-family: var(--mono); }
+    .btn { justify-self: start; padding: 20px 44px; border-radius: 14px; background: var(--accent); color: #fff; font-size: 30px; font-weight: 700; }
+    .result { padding: 22px 30px; border-radius: 14px; background: #e8f5ee; color: #146c43; font-size: 26px; border: 1px solid #b7e1c8; }
+    .recap { list-style: none; margin: 40px 0 0; padding: 0; display: grid; gap: 22px; text-align: left; }
+    .recap li { font-size: 30px; line-height: 1.5; padding-left: 40px; position: relative; }
+    .recap li::before { content: '✓'; position: absolute; left: 0; top: 0; line-height: inherit; color: var(--accent); font-weight: 700; }
+  </style>
+</head>
+<body>
+<script type="module">
+  import { createVideo, fx } from '../../engine/index.js';
+
+  // 教程骨架：光标是贯穿全片的主线（docs/lessons.md §3.4）。
+  //   1. 交接：.goal 带 data-carry="goal"，每个章节都有一份 → 在交界处飞到新位置，不是整屏换掉。
+  //   2. 因果：每个变化前都有光标动作（点输入框 → 开始打字；点按钮 → 结果出现）。
+  //   3. 停顿：点击/结果之后留 0.4–1s 不再加动作（背景和镜头照常漂移）。
+  // ctx.cursor(steps) 全片共用一个光标：to 可以是元素或本章坐标 [x, y]；hide 让它淡出。
+  // rhythm：anchor = 节拍点（开场/结论）；dense = 信息密集；breathing = 留白（≤ 全片 30%，不能连着）。
+  await createVideo({
+    width: 1920, height: 1080, fps: 30,
+    look: 'light',
+    theme: { accent: '#1a73e8' },
+    background: 'network',
+    progress: true,
+    chapters: [
+      {
+        id: 'hook', title: '目标', dur: 4.5, rhythm: 'anchor',
+        html: `
+          <div class="wrap mid">
+            <span class="kicker">TUTORIAL</span>
+            <h1 class="h1">__TITLE__</h1>
+            <p class="lede">两步完成，跟着光标走</p>
+          </div>
+          <span class="goal" data-carry="goal">目标：做出第一个结果</span>`,
+        build(tl, el, ctx) {
+          tl.from(el.querySelector('.kicker'), { opacity: 0, y: 16 }, { at: 0.2, dur: 0.7, ease: 'outCubic' });
+          fx.textIn(tl, el.querySelector('.h1'), { at: 0.35, preset: 'line', sfx: 'rise' });
+          fx.textIn(tl, el.querySelector('.lede'), { at: 0.75, preset: 'line' });
+          tl.from(el.querySelector('.goal'), { opacity: 0, y: 16 }, { at: 1.1, dur: 0.6, ease: 'outCubic' });
+          // 光标在开场就出现，停在目标旁边，下一章带着观众过去。goal 在每章都放左上角，飞行路线不穿过正文。
+          ctx.cursor([{ to: el.querySelector('.goal'), at: 1.6, dur: 0.9, fx: 1.05, fy: 0.9 }]);
+        },
+      },
+      {
+        id: 'input', title: '第 1 步', dur: 6.5, rhythm: 'dense',
+        html: `
+          <span class="goal" data-carry="goal">目标：做出第一个结果</span>
+          <div class="side">
+            <h2 class="h2">第 1 步 · 输入</h2>
+            <p>点输入框，敲下命令</p>
+          </div>
+          <div class="app">
+            <div class="bar"><i></i><i></i><i></i></div>
+            <div class="body">
+              <div class="field typed" data-text="npm run new -- my-video"></div>
+              <div class="field">等待输入…</div>
+            </div>
+          </div>`,
+        build(tl, el, ctx) {
+          const a = ctx.arrive;
+          fx.textIn(tl, el.querySelector('.side .h2'), { at: 0.5, preset: 'line' });
+          fx.textIn(tl, el.querySelector('.side p'), { at: 0.8, preset: 'fade' });
+          tl.from(el.querySelector('.app'), { y: 40, opacity: 0 }, { at: 0.3, dur: 0.8, ease: 'outCubic' });
+          // 因果：先点输入框，再开始打字。
+          ctx.cursor([{ to: el.querySelector('.typed'), at: a, dur: 0.8, fx: 0.08, fy: 0.6, click: true }]);
+          fx.typewriter(tl, el.querySelector('.typed'), { at: a + 1.1, cps: 16 });
+          tl.caption('先点输入框，再敲命令', a + 0.4, 3);
+        },
+      },
+      {
+        id: 'run', title: '第 2 步', dur: 6.5, rhythm: 'dense',
+        html: `
+          <span class="goal" data-carry="goal">目标：做出第一个结果</span>
+          <div class="side">
+            <h2 class="h2">第 2 步 · 运行</h2>
+            <p>点按钮，结果马上出现</p>
+          </div>
+          <div class="app">
+            <div class="bar"><i></i><i></i><i></i></div>
+            <div class="body">
+              <div class="field">npm run new -- my-video</div>
+              <div class="btn">运行</div>
+              <div class="result">✓ projects/my-video 已创建</div>
+            </div>
+          </div>`,
+        build(tl, el, ctx) {
+          const a = ctx.arrive;
+          fx.textIn(tl, el.querySelector('.side .h2'), { at: 0.5, preset: 'line' });
+          fx.textIn(tl, el.querySelector('.side p'), { at: 0.8, preset: 'fade' });
+          tl.from(el.querySelector('.app'), { y: 40, opacity: 0 }, { at: 0.3, dur: 0.8, ease: 'outCubic' });
+          // 因果：点击 → 按钮按下 → 结果出现，然后停住 ~1s。
+          ctx.cursor([{ to: el.querySelector('.btn'), at: a + 0.2, dur: 0.9, click: true, press: true }]);
+          fx.highlight(tl, el, el.querySelector('.btn'), { at: a, dur: 1.2 });
+          tl.from(el.querySelector('.result'), { y: 24, opacity: 0 }, { at: a + 1.3, dur: 0.6, ease: 'outCubic' });
+          tl.sfx('success', a + 1.3);
+          tl.caption('点一下，结果就出来了', a + 1.4, 3);
+        },
+      },
+      {
+        id: 'recap', title: '回顾', dur: 5, rhythm: 'anchor',
+        html: `
+          <div class="wrap mid">
+            <h2 class="h2">就这两步</h2>
+            <ul class="recap">
+              <li>点输入框，敲命令</li>
+              <li>点运行，看结果</li>
+            </ul>
+          </div>
+          <span class="goal" data-carry="goal">目标：做出第一个结果</span>`,
+        build(tl, el, ctx) {
+          fx.textIn(tl, el.querySelector('.h2'), { at: 0.5, preset: 'line', sfx: 'whoosh' });
+          fx.staggerIn(tl, el.querySelectorAll('.recap li'), { at: 0.8, stagger: 0.3, dur: 0.7, from: { x: 30, opacity: 0 } });
+          // 主线收尾：光标退场。
+          ctx.cursor([{ hide: ctx.arrive + 0.6 }]);
+        },
+      },
+    ],
+  });
+</script>
+</body>
+</html>

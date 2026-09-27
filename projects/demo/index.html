@@ -5,133 +5,149 @@
   <title>Demo — HTML 视频框架</title>
   <link rel="stylesheet" href="../../engine/base.css">
   <style>
-    .intro-glow { position: absolute; width: 900px; height: 900px; left: 510px; top: 90px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(110,231,255,.35), transparent 60%); }
-    .stats { display: flex; gap: 48px; }
-    .stat { width: 420px; text-align: center; }
-    .stat b { display: block; font-size: 110px; font-weight: 800; }
-    .stat span { color: var(--muted); font-size: 34px; }
-    .app { position: absolute; left: 180px; top: 180px; width: 1100px; height: 680px; }
-    .app .body { padding: 48px; display: grid; gap: 28px; }
-    .field { height: 72px; border-radius: 12px; background: #1c2433; border: 1px solid #2f3a4f; font-size: 30px; padding: 18px 22px; color: #cbd5e1; font-family: var(--mono); }
-    .btn { justify-self: start; padding: 20px 44px; border-radius: 14px; background: var(--accent); color: #041018; font-size: 32px; font-weight: 700; }
-    .toast { position: absolute; right: 60px; bottom: 60px; padding: 22px 30px; border-radius: 14px; background: #14532d; color: #bbf7d0; font-size: 28px; }
+    .wrap { position: absolute; left: 160px; right: 160px; top: 0; bottom: 150px; display: flex; flex-direction: column; justify-content: center; }
+    .wrap.mid { align-items: center; text-align: center; }
+    .ms-list { position: absolute; left: 800px; right: 160px; top: 0; bottom: 150px; display: flex; flex-direction: column; justify-content: center; }
+    .ms-list ul { list-style: none; margin: 48px 0 0; padding: 0; display: grid; gap: 22px; }
+    .ms-list li { font-size: 36px; padding-left: 36px; position: relative; }
+    .ms-list li::before { content: ''; position: absolute; left: 0; top: .55em; width: 14px; height: 14px; border-radius: 4px; background: var(--accent); }
+    .st-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 56px; }
+    .st-card { padding: 40px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 18px 48px rgba(16,24,40,.06); }
+    .st-card b { display: block; font-size: 112px; font-weight: 800; line-height: normal; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .st-card span { display: block; margin-top: 18px; font-size: 30px; color: var(--muted); }
+    .tu-app { position: absolute; left: 160px; top: 200px; width: 1100px; min-height: 560px; background: #fff; border: 1px solid var(--line); border-radius: 20px; box-shadow: 0 24px 64px rgba(16,24,40,.08); overflow: hidden; }
+    .tu-app .tu-bar { height: 52px; border-bottom: 1px solid var(--line); display: flex; gap: 10px; align-items: center; padding: 0 20px; }
+    .tu-app .tu-bar i { width: 14px; height: 14px; border-radius: 50%; background: #e2e6ee; }
+    .tu-body { padding: 48px; display: grid; gap: 28px; }
+    .tu-field { min-height: 72px; border-radius: 12px; background: #f5f7fb; border: 1px solid var(--line); font-size: 30px; padding: 18px 22px; font-family: var(--mono); }
+    .tu-btn { justify-self: start; padding: 20px 44px; border-radius: 14px; background: var(--accent); color: #fff; font-size: 32px; font-weight: 700; }
+    .tu-side { position: absolute; left: 1340px; right: 160px; top: 200px; }
+    .tu-side p { font-size: 30px; line-height: 1.6; color: var(--muted); margin: 18px 0 0; }
+    .ou-cmd { box-sizing: border-box; width: 1004px; min-height: 72px; margin-top: 40px; border-radius: 12px; background: #f5f7fb; border: 1px solid var(--line); font-size: 30px; padding: 18px 22px; font-family: var(--mono); text-align: left; }
+    .tu-toast { position: absolute; left: 1340px; top: 640px; padding: 22px 30px; border-radius: 14px; background: #e8f5ee; color: #146c43; font-size: 28px; border: 1px solid #b7e1c8; }
   </style>
 </head>
 <body>
 <script type="module">
   import { createVideo, MeshPuppet, fx } from '../../engine/index.js';
 
-  // Prefer the GPT-image asset if it has been generated; fall back to the placeholder.
+  // 优先用 GPT Image 生成的角色图，没有就用占位 SVG。
   const asset = async (png, fallback) => ((await fetch(png, { method: 'HEAD' })).ok ? png : fallback);
-  const mascotSrc = await asset('assets/mascot.png', 'assets/mascot.svg');
-  const bgIntro = await asset('assets/bg-intro.png', null);
+  const mascot = new MeshPuppet({ src: await asset('assets/mascot.png', 'assets/mascot.svg'), width: 520, height: 780, headLine: 0.5, seed: 4 });
 
-  const mascot = new MeshPuppet({ src: mascotSrc, width: 520, height: 780, headLine: 0.5, seed: 4 });
-
+  // 连续模式：五章横排在一条长画布上，镜头一路平移，背景和进度轴全程不停。
   await createVideo({
     width: 1920, height: 1080, fps: 30,
-    theme: { accent: '#6ee7ff', accent2: '#a78bfa' },
+    look: 'light',
+    theme: { accent: '#1a73e8' },
+    background: 'network',
+    progress: true,
     ready: [mascot.ready],
-    scenes: [
+    chapters: [
       {
-        id: 'intro', title: '开场', dur: 6, className: 'bg-grad',
+        id: 'intro', title: '开场', dur: 5,
         html: `
-          ${bgIntro ? `<img class="bg-image" src="${bgIntro}">` : ''}
-          <div class="intro-glow"></div>
-          <div class="center">
-            <h1 class="title grad-text">HTML Motion Kit</h1>
-            <p class="subtitle">用网页做出流畅的介绍视频</p>
+          <div class="wrap mid">
+            <span class="kicker">HTML MOTION KIT</span>
+            <h1 class="h1">用网页做视频</h1>
+            <p class="lede">每一帧都是时间的函数，预览和导出完全一致</p>
           </div>`,
-        build(tl, el, { stage }) {
-          const bg = el.querySelector('.bg-image');
-          if (bg) fx.kenBurns(tl, bg, { dur: 6 });
-          fx.particles(tl, el, { mode: 'bokeh', count: 26, colors: ['#6ee7ff', '#a78bfa'], seed: 2 });
-          tl.fromTo(el.querySelector('.intro-glow'), { scale: 0.4, opacity: 0 }, { scale: 1, opacity: 1 }, { at: 0, dur: 2, ease: 'outCubic' });
-          tl.sfx('rise', 0, { dur: 0.9 });
-          fx.textIn(tl, el.querySelector('.title'), { at: 0.8, preset: 'blur', stagger: 0.04, dur: 0.8 });
-          tl.sfx('impact', 1.1);
-          fx.textIn(tl, el.querySelector('.subtitle'), { at: '-0.2', preset: 'rise', stagger: 0.03 });
-          tl.caption('这是一个完全基于 HTML / JS 的视频框架', 2.2, 3.4);
+        build(tl, el) {
+          tl.from(el.querySelector('.kicker'), { opacity: 0, y: 16 }, { at: 0.2, dur: 0.7, ease: 'outCubic' });
+          fx.textIn(tl, el.querySelector('.h1'), { at: 0.35, preset: 'line', sfx: 'rise' });
+          fx.textIn(tl, el.querySelector('.lede'), { at: 0.8, preset: 'line' });
+          tl.caption('一个完全基于 HTML / JS 的视频框架', 1.6, 3);
         },
       },
       {
-        id: 'mascot', title: '角色', dur: 7, transition: 'zoom', className: 'bg-grad',
+        id: 'mascot', title: '角色', dur: 6.5,
         html: `
-          <div class="card" style="position:absolute;left:760px;top:300px;width:960px">
-            <ul class="bullets">
+          <div class="ms-list">
+            <h2 class="h2">会动的角色</h2>
+            <ul>
               <li>GPT Image 生成角色与背景</li>
               <li>网格变形：呼吸、摇摆、点头</li>
               <li>时间轴驱动，可拖动、可逐帧导出</li>
             </ul>
           </div>`,
-        build(tl, el) {
+        build(tl, el, ctx) {
           el.appendChild(mascot.el);
-          Object.assign(mascot.el.style, { left: '160px', top: '260px' });
-          tl.from(mascot.el, { y: 500, opacity: 0 }, { at: 0.3, dur: 0.9, ease: 'outBack' });
+          Object.assign(mascot.el.style, { left: '200px', top: '150px' });
+          tl.from(mascot.el, { y: 80, opacity: 0 }, { at: 0.3, dur: 0.9, ease: 'outCubic' });
           tl.add((lt) => mascot.update(lt));
-          mascot.emote('bounce', 1.3, 0.6).emote('nod', 3.2, 0.9).emote('tilt', 5, 1.2);
-          tl.sfx('pop', 1.3);
-          fx.staggerIn(tl, el.querySelectorAll('.bullets li'), { at: 1.6, stagger: 0.5, from: { x: 60, opacity: 0 }, sfx: 'blip' });
-          tl.caption('角色图由 Agent 生成后自动做成可动的形象', 1.5, 4.8);
+          mascot.emote('nod', ctx.arrive + 1.2, 0.9).emote('tilt', ctx.arrive + 3, 1.2);
+          fx.textIn(tl, el.querySelector('.h2'), { at: 0.5, preset: 'line' });
+          fx.staggerIn(tl, el.querySelectorAll('.ms-list li'), { at: 0.7, stagger: 0.3, dur: 0.7, from: { x: 40, opacity: 0 }, sfx: 'blip' });
+          tl.caption('角色图由 Agent 生成后自动做成可动的形象', ctx.arrive + 0.8, 3.6);
         },
       },
       {
-        id: 'stats', title: '数据', dur: 5, transition: 'slide', className: 'bg-grad',
+        id: 'stats', title: '数据', dur: 5.5,
         html: `
-          <div class="center">
-            <div class="stats">
-              <div class="stat card"><b class="n1">0</b><span>帧/秒</span></div>
-              <div class="stat card"><b class="n2">0</b><span>内置音效</span></div>
-              <div class="stat card"><b class="n3">0</b><span>外部依赖（运行时）</span></div>
+          <div class="wrap">
+            <h2 class="h2">轻，但够用</h2>
+            <div class="st-row">
+              <div class="st-card"><b class="n1">0</b><span>帧/秒导出</span></div>
+              <div class="st-card"><b class="n2">0</b><span>内置合成音效</span></div>
+              <div class="st-card"><b class="n3">0</b><span>运行时外部依赖</span></div>
             </div>
           </div>`,
-        build(tl, el) {
-          fx.staggerIn(tl, el.querySelectorAll('.stat'), { at: 0.6, stagger: 0.15, from: { y: 80, opacity: 0, scale: 0.9 }, ease: 'outBack' });
-          fx.counter(tl, el.querySelector('.n1'), { to: 60, at: 1, dur: 1.4 });
-          fx.counter(tl, el.querySelector('.n2'), { to: 15, at: 1.2, dur: 1.4, sfx: null });
-          fx.counter(tl, el.querySelector('.n3'), { from: 99, to: 0, at: 1.4, dur: 1.4, sfx: null });
-          fx.particles(tl, el, { mode: 'burst', at: 3, count: 70, colors: ['#6ee7ff', '#a78bfa', '#fff'], origin: [0.5, 0.45] });
+        build(tl, el, ctx) {
+          fx.textIn(tl, el.querySelector('.h2'), { at: 0.5, preset: 'line' });
+          fx.staggerIn(tl, el.querySelectorAll('.st-card'), { at: ctx.arrive - 0.4, stagger: 0.2, dur: 0.8, from: { y: 36, opacity: 0 } });
+          fx.counter(tl, el.querySelector('.n1'), { to: 60, at: ctx.arrive, dur: 1.4, ease: 'outCubic' });
+          fx.counter(tl, el.querySelector('.n2'), { to: 15, at: ctx.arrive + 0.2, dur: 1.4, ease: 'outCubic', sfx: null });
+          fx.counter(tl, el.querySelector('.n3'), { from: 9, to: 0, at: ctx.arrive + 0.4, dur: 1.4, ease: 'outCubic', sfx: null });
         },
       },
       {
-        id: 'tutorial', title: '教程演示', dur: 8, transition: 'up', className: 'bg-grad',
+        id: 'tutorial', title: '教程', dur: 7.5,
         html: `
-          <div class="window app">
-            <div class="bar"><i></i><i></i><i></i></div>
-            <div class="body">
-              <div class="field">npm run img -- --manifest assets.json</div>
-              <div class="field typed" data-text="npm run render -- projects/demo"></div>
-              <div class="btn">生成视频</div>
+          <div class="tu-app">
+            <div class="tu-bar"><i></i><i></i><i></i></div>
+            <div class="tu-body">
+              <div class="tu-field" data-carry="cmd">npm run new -- my-video</div>
+              <div class="tu-field typed" data-text="npm run render -- projects/my-video"></div>
+              <div class="tu-btn">生成视频</div>
             </div>
           </div>
-          <div class="toast">✓ out.mp4 已导出</div>`,
-        build(tl, el, { stage }) {
-          const app = el.querySelector('.app');
-          tl.from(app, { y: 60, opacity: 0, scale: 0.96 }, { at: 0.5, dur: 0.8, ease: 'outCubic' });
-          fx.typewriter(tl, el.querySelector('.typed'), { at: 1.6, cps: 18 });
-          fx.cursor(tl, el, [
-            { to: [1500, 900], at: 1.2, dur: 0.01 },
-            { to: el.querySelector('.btn'), at: 4.0, dur: 0.9, click: true, press: true },
+          <div class="tu-side">
+            <h2 class="h2">教程场景</h2>
+            <p>打字、点击、高亮<br>音效自动配好</p>
+          </div>
+          <div class="tu-toast">✓ out.mp4 已导出</div>`,
+        build(tl, el, ctx) {
+          const a = ctx.arrive;
+          tl.from(el.querySelector('.tu-app'), { y: 40, opacity: 0 }, { at: 0.3, dur: 0.8, ease: 'outCubic' });
+          fx.textIn(tl, el.querySelector('.tu-side .h2'), { at: 0.6, preset: 'line' });
+          fx.textIn(tl, el.querySelector('.tu-side p'), { at: 0.9, preset: 'fade' });
+          fx.typewriter(tl, el.querySelector('.typed'), { at: a + 0.2, cps: 18 });
+          ctx.cursor([
+            { to: [1200, 820], at: a, dur: 0.01 },
+            { to: el.querySelector('.tu-btn'), at: a + 2.4, dur: 0.9, click: true, press: true },
           ]);
-          fx.highlight(tl, el, el.querySelector('.btn'), { at: 3.4, dur: 1.2 });
-          tl.from(el.querySelector('.toast'), { y: 40, opacity: 0 }, { at: 5.3, dur: 0.5, ease: 'outBack' });
-          tl.sfx('success', 5.3);
-          tl.caption('教程场景：打字、光标点击、高亮，全部自动配音效', 1.5, 5.5);
+          fx.highlight(tl, el, el.querySelector('.tu-btn'), { at: a + 2.2, dur: 1.2 });
+          tl.from(el.querySelector('.tu-toast'), { y: 24, opacity: 0 }, { at: a + 3.5, dur: 0.6, ease: 'outCubic' });
+          tl.sfx('success', a + 3.5);
         },
       },
       {
-        id: 'outro', title: '结尾', dur: 5, transition: 'circle', className: 'bg-grad',
-        html: `<div class="center"><h1 class="title">开始创作吧</h1><p class="subtitle">npm run new -- my-video</p></div>`,
-        build(tl, el) {
-          fx.textIn(tl, el.querySelector('.title'), { at: 0.7, preset: 'drop', stagger: 0.07, sfx: 'whoosh' });
-          fx.textIn(tl, el.querySelector('.subtitle'), { at: '+0.1', preset: 'pop', stagger: 0.02 });
-          fx.particles(tl, el, { mode: 'confetti', at: 1.4, count: 120, colors: ['#6ee7ff', '#a78bfa', '#fde047', '#f472b6'], origin: [0.5, 0.4] });
-          tl.to(el, { opacity: 0 }, { at: 4.2, dur: 0.8 });
+        id: 'outro', title: '结尾', dur: 5,
+        html: `
+          <div class="wrap mid">
+            <h2 class="h2">开始创作吧</h2>
+            <div class="ou-cmd" data-carry="cmd">npm run new -- my-video</div>
+            <p class="sub">docs/lessons.md · 先读避坑指南</p>
+          </div>`,
+        build(tl, el, ctx) {
+          // .ou-cmd 由上一章的命令行 carry 过来（data-carry="cmd"），不再单独入场；光标跟着飞过来再退场。
+          fx.textIn(tl, el.querySelector('.h2'), { at: 0.5, preset: 'line', sfx: 'whoosh' });
+          ctx.cursor([{ to: el.querySelector('.ou-cmd'), at: 0.2, dur: 1.1, fx: 0.9, fy: 0.8 }, { hide: ctx.arrive + 0.8 }]);
+          fx.textIn(tl, el.querySelector('.sub'), { at: 1.15, preset: 'fade' });
         },
       },
     ],
-    // Supply a music file for real projects: music: { src: 'assets/music.mp3', volume: 0.3 }
+    // 真实项目可加音乐：music: { src: 'assets/music.mp3', volume: 0.3 }
   });
 </script>
 </body>

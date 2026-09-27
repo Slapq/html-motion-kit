@@ -1,6 +1,6 @@
 {
   "name": "html-motion-kit",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "Frame-exact HTML/JS motion graphics & video framework with a TouchDesigner/Cavalry-style data graph; usable as a DeepSeek Harness (DSH) plugin",
   "license": "MIT",
   "private": true,
@@ -27,6 +27,7 @@
   "files": [
     "dsh",
     "engine",
+    "docs/lessons.md",
     "tools",
     "projects/demo",
     "projects/graph-showcase",
@@ -42,6 +43,7 @@
     "serve": "node tools/serve.mjs",
     "img": "node tools/gen-image.mjs",
     "render": "node tools/render.mjs",
+    "audit": "node tools/audit.mjs",
     "new": "node tools/new-project.mjs",
     "test": "node --test tests/*.test.mjs"
   },

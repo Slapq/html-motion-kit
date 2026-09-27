@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>HTML Motion Kit · 一镜到底</title>
+  <link rel="stylesheet" href="../../engine/base.css">
+  <style>
+    /* 一镜到底：整片只有一个镜头、一块画布。没有分幕滑动，所有东西都从"时间轴"上长出来。 */
+    .tk-world { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; will-change: transform; }
+
+    /* 轴：本片自己的时间轴（唯一贯穿全片的物件） */
+    .tk-axis { position: absolute; left: 220px; top: 698px; width: 1480px; height: 4px; border-radius: 2px;
+      background: var(--line); transform-origin: left center; }
+    .tk-fill { position: absolute; left: 220px; top: 698px; width: 1480px; height: 4px; border-radius: 2px;
+      background: var(--accent); transform-origin: left center; }
+    .tk-head { position: absolute; left: 220px; top: 700px; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent) 13%, transparent); }
+    .tk-tick { position: absolute; top: 684px; width: 2px; height: 32px; border-radius: 1px;
+      background: color-mix(in srgb, var(--fg) 20%, transparent); }
+
+    /* 帧格：从轴上长出来，后来拉成代码行；原点在左上，缩放后顶边才落在目标行上 */
+    .tk-cell { position: absolute; top: 686px; width: 30px; height: 30px; border-radius: 4px;
+      background: color-mix(in srgb, var(--fg) 8%, transparent); transform-origin: left top; }
+
+    /* 文字 */
+    .tk-kicker { position: absolute; left: 0; right: 0; top: 300px; margin: 0; text-align: center; }
+    .tk-kicker span { display: inline-block; padding: 10px 20px; border-radius: 999px; background: var(--accent-soft);
+      color: #2c46c9; font-size: 19px; font-weight: 600; letter-spacing: .16em; }
+    .tk-h1 { position: absolute; left: 0; right: 0; top: 486px; margin: 0; text-align: center;
+      font-size: 104px; font-weight: 700; letter-spacing: -2px; }
+    .tk-lede { position: absolute; left: 0; right: 0; top: 646px; margin: 0; text-align: center;
+      font-size: 36px; color: var(--muted); }
+    .tk-h2 { position: absolute; left: 0; right: 0; top: 500px; margin: 0; text-align: center;
+      font-size: 64px; font-weight: 700; letter-spacing: -1.4px; }
+    .tk-sub { position: absolute; left: 0; right: 0; top: 762px; margin: 0; text-align: center;
+      font-size: 28px; color: var(--muted); }
+    .tk-read { position: absolute; left: 220px; top: 828px; font-family: var(--mono); font-size: 24px; color: var(--faint); }
+    .tk-read b { color: var(--fg); }
+    .tk-read span { margin-left: 12px; }
+
+    /* 代码行（由帧格拉长而成）：line-height 要给足，否则墨迹高于盒子会被判"裁切" */
+    .tk-line { position: absolute; left: 598px; font-family: var(--mono); font-size: 24px; line-height: 1.25;
+      white-space: pre; color: #34435c; }
+    .tk-note { position: absolute; left: 220px; top: 884px; margin: 0; font-size: 24px; color: var(--faint); }
+    .tk-log { position: absolute; left: 598px; top: 616px; padding: 22px 28px; border-radius: 16px; background: #fff;
+      border: 1px solid var(--line); box-shadow: 0 18px 48px rgba(16,24,40,.07); }
+    .tk-logline { display: block; font-family: var(--mono); font-size: 22px; line-height: 1.7; color: #2f7d4f; }
+    .tk-logline.dim { color: var(--muted); }
+
+    /* 收尾 */
+    .tk-end { position: absolute; left: 0; right: 0; top: 380px; margin: 0; text-align: center;
+      font-size: 64px; font-weight: 700; letter-spacing: -1.4px; }
+    .tk-lede2 { position: absolute; left: 0; right: 0; top: 552px; margin: 0; text-align: center;
+      font-size: 30px; color: var(--muted); }
+    .tk-repo { position: absolute; left: 0; right: 0; top: 608px; margin: 0; text-align: center;
+      font-family: var(--mono); font-size: 26px; color: var(--faint); }
+
+    /* 大肥鱼：从轴里长出来，也收回轴里 */
+    .tk-chan { position: absolute; left: 1430px; top: 300px; height: 400px; transform-origin: bottom center; }
+    .tk-chan2 { position: absolute; left: 250px; top: 340px; height: 360px; transform-origin: bottom center; }
+
+    /* 常驻 HUD */
+    .tk-top { position: absolute; left: 64px; right: 64px; top: 40px; display: flex; align-items: center; justify-content: space-between;
+      font-size: 19px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: var(--faint); }
+    .tk-brand { display: flex; align-items: center; gap: 14px; }
+    .tk-avatar { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; object-position: 50% 32%;
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
+    .tk-tc { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: .06em; }
+
+    /* 伪光标 */
+    .vc { position: absolute; left: 0; top: 0; z-index: 9000; pointer-events: none;
+      filter: drop-shadow(0 4px 10px rgba(16,24,40,.3)); }
+    .vc i { position: absolute; left: 3px; top: 3px; width: 44px; height: 44px; margin: -22px 0 0 -22px;
+      border-radius: 50%; border: 3px solid var(--accent); opacity: 0; }
+  </style>
+</head>
+<body>
+<script type="module">
+  import { createVideo, fx } from '../../engine/index.js';
+
+  // —— 一镜到底 · 概念 A：一根时间轴走完全片 ——
+  // 全片只有一个镜头、一块画布，没有分幕滑动。每一次交接都有东西活下来：
+  //   轴线 → 帧格 → 代码行 → 收尾字标的下划线；大肥鱼两次从轴里长出来。
+  // 静止段是刻意的（有停顿，动作才落得下来）；画面里唯一的连续运动是播放头和读数。
+  const DUR = 30;
+  const A0 = 220, AW = 1480;                            // 轴：x 220→1700，y 700
+  const cellX = (i) => A0 + i * 37;                     // 40 格 × 37px
+  const tickN = 8, tickX = (i) => A0 + (AW * i) / (tickN - 1);
+  const C0 = 598, CW = 880, CY = 200, CDY = 52;         // 代码行：8 行
+  const CHAN = '../motion-kit-promo/assets/chan-hero.png';
+
+  const CODE = [
+    'await createVideo({',
+    "  fps: 30, look: 'light',",
+    '  chapters: [{',
+    "    id: 'intro', dur: 30,",
+    '    build: (tl, el) =&gt;',
+    '      fx.textIn(tl, el),',
+    '  }],',
+    '});',
+  ];
+
+  // 伪光标：按坐标定位（帧格会被拉成代码行，构建期量元素位置会量到旧位置）
+  function cursorIn(tl, panel, steps) {
+    const c = document.createElement('div');
+    c.className = 'vc';
+    c.innerHTML = '<svg viewBox="0 0 24 24" width="52" height="52"><path d="M3 2l7 19 2.6-7.8L20 11z" fill="#fff" stroke="#141F45" stroke-width="1.6" stroke-linejoin="round"/></svg><i></i>';
+    panel.appendChild(c);
+    const ring = c.querySelector('i');
+    const first = steps.find((s) => s.to);
+    tl.set(c, { x: first.to[0] + 240, y: first.to[1] + 200, opacity: 0, scale: 1 }, { at: -60 });
+    tl.set(ring, { opacity: 0, scale: 0.2 }, { at: -60 });
+    for (const st of steps) {
+      if (st.to) tl.to(c, { x: st.to[0], y: st.to[1], opacity: 1 }, { at: st.at, dur: st.dur ?? 0.85, ease: 'inOutCubic' });
+      if (st.click) {
+        const ct = st.at + (st.dur ?? 0.85);
+        tl.to(c, { scale: 0.82 }, { at: ct, dur: 0.08 });
+        tl.to(c, { scale: 1 }, { at: ct + 0.08, dur: 0.16 });
+        tl.fromTo(ring, { scale: 0.2, opacity: 0.9 }, { scale: 2.2, opacity: 0 }, { at: ct, dur: 0.5, ease: 'outCubic' });
+      }
+      if (st.hide) tl.to(c, { opacity: 0 }, { at: st.hide, dur: 0.45 });
+    }
+    return c;
+  }
+
+  const ticks = Array.from({ length: tickN }, (_, i) => `<i class="tk-tick" data-x="${tickX(i).toFixed(1)}" style="left:${tickX(i).toFixed(1)}px"></i>`).join('');
+  const cells = Array.from({ length: 40 }, (_, i) => `<i class="tk-cell" style="left:${cellX(i)}px"></i>`).join('');
+  const lines = CODE.map((s, g) => `<span class="tk-line" style="top:${CY + g * CDY - 9}px">${s}</span>`).join('');
+
+  await createVideo({
+    width: 1920, height: 1080, fps: 30,
+    look: 'light',
+    theme: { accent: '#4D6BFE' },
+    background: { type: 'network', guides: false, alpha: 1.6, count: 64 },
+    progress: false,
+    camera: { drift: 0 },
+    hud: `
+      <div class="tk-top">
+        <span class="tk-brand"><img class="tk-avatar" src="../motion-kit-promo/assets/chan-avatar.png" alt="">HTML Motion Kit · DeepSeek Harness</span>
+        <span class="tk-tc">00.0 / 30.0</span>
+      </div>`,
+    build(tl, film) {
+      const tc = film.querySelector('.tk-tc');
+      tl.add((lt, t) => { tc.textContent = `${t.toFixed(1).padStart(4, '0')} / 30.0`; }, { at: 0, label: 'hud:readout' });
+    },
+    chapters: [{
+      id: 'take', title: '一镜到底', dur: DUR,
+      html: `
+        <div class="tk-world">
+          <i class="tk-axis"></i>
+          <i class="tk-fill" style="transform:scaleX(0)"></i>
+          ${ticks}
+          ${cells}
+          <i class="tk-head"></i>
+          <p class="tk-kicker"><span>DeepSeek Harness 插件</span></p>
+          <h1 class="tk-h1">HTML Motion Kit</h1>
+          <p class="tk-lede">用 HTML 写视频，逐帧导出 MP4</p>
+          <h2 class="tk-h2">画面 = 时间 t 的函数</h2>
+          <p class="tk-sub">拖动预览、跳章、逐帧导出，看到的就是导出的</p>
+          <div class="tk-read"><b class="tk-rd-t">00.00s</b><span class="tk-rd-m">/ 30.00s</span><span class="tk-rd-f">第 0000 帧</span></div>
+          <p class="tk-note">帧 = 1/30 秒 · 可拖动预览 · 可跳章 · 逐帧一致</p>
+          ${lines}
+          <div class="tk-log">
+            <span class="tk-logline">✓ out.mp4 · 900 帧 · 30.0s</span>
+            <span class="tk-logline dim">✓ 音画同步 · 无页面错误</span>
+          </div>
+          <h2 class="tk-end">写 HTML，导出成片</h2>
+          <p class="tk-lede2">帧精确、可审计、可复用的动态图形框架</p>
+          <p class="tk-repo">github.com/Slapq/html-motion-kit</p>
+          <img class="tk-chan" src="${CHAN}" alt="">
+          <img class="tk-chan2" src="${CHAN}" alt="">
+        </div>`,
+      build(tl, el) {
+        const q = (s) => el.querySelector(s);
+        const qa = (s) => [...el.querySelectorAll(s)];
+        const world = q('.tk-world');
+        const fill = q('.tk-fill'), head = q('.tk-head'), rdT = q('.tk-rd-t'), rdF = q('.tk-rd-f');
+        const tickEls = qa('.tk-tick'), cellEls = qa('.tk-cell'), lineEls = qa('.tk-line');
+        const bars = cellEls.filter((_, i) => i % 5 === 0);
+
+        // 全片唯一的连续运动：播放头 + 读数（它跑的就是本片自己的时间）
+        tl.add((lt, t) => {
+          const p = Math.max(0, Math.min(1, t / DUR));
+          head.style.left = (A0 + AW * p).toFixed(1) + 'px';
+          fill.style.transform = `scaleX(${p.toFixed(4)})`;
+          rdT.textContent = t.toFixed(2) + 's';
+          rdF.textContent = '第 ' + String(Math.round(t * 30)).padStart(4, '0') + ' 帧';
+          for (let i = 0; i < tickEls.length; i++) {
+            const on = A0 + AW * p >= +tickEls[i].dataset.x - 2;
+            tickEls[i].style.background = on ? 'var(--accent)' : 'color-mix(in srgb, var(--fg) 20%, transparent)';
+          }
+          for (let i = 0; i < cellEls.length; i++) {
+            if (t > 13.9) { cellEls[i].style.background = 'color-mix(in srgb, var(--accent) 16%, transparent)'; continue; }
+            cellEls[i].style.background = A0 + AW * p >= cellX(i)
+              ? 'var(--accent)' : 'color-mix(in srgb, var(--fg) 8%, transparent)';
+          }
+        }, { at: 0, label: 'axis:playhead' });
+
+        // ---- 镜头：只在有理由的时候动，其余时间完全静止 ----
+        tl.to(world, { y: -60, scale: 1.06 }, { at: 7.4, dur: 1.0, ease: 'inOutCubic' });
+        tl.to(world, { y: -90, scale: 1.04 }, { at: 14.6, dur: 1.0, ease: 'inOutCubic' });
+        tl.to(world, { y: 0, scale: 1 }, { at: 22.0, dur: 1.0, ease: 'inOutCubic' });
+
+        // ---- 第一拍 0–7：轴长出来，标题和角色从轴里长出来 ----
+        tl.fromTo(fill, { scaleX: 0 }, { scaleX: 1 }, { at: 0.25, dur: 1.1, ease: 'outCubic' });
+        tl.from(q('.tk-axis'), { scaleX: 0 }, { at: 0.25, dur: 1.1, ease: 'outCubic' });
+        tl.from(q('.tk-read'), { opacity: 0, y: 12 }, { at: 0.12, dur: 0.5, ease: 'outCubic' });
+        tl.from(q('.tk-head'), { opacity: 0, scale: 0.4 }, { at: 0.3, dur: 0.5, ease: 'outBack' });
+        tl.from(q('.tk-kicker'), { opacity: 0, y: 18 }, { at: 0.3, dur: 0.6, ease: 'outCubic' });
+        tl.from(q('.tk-h1'), { opacity: 0, y: 58 }, { at: 1.0, dur: 0.95, ease: 'outCubic' });
+        tl.from(q('.tk-lede'), { opacity: 0, y: -22 }, { at: 1.6, dur: 0.85, ease: 'outCubic' });
+        const chan = q('.tk-chan');
+        tl.from(chan, { opacity: 0, y: 120, scaleY: 0.86 }, { at: 3.1, dur: 1.05, ease: 'outCubic' });
+        // 停 4.15–6.6：内容层落定，chan 做一次缓慢推近，避免整帧长时间零变化
+        fx.kenBurns(tl, chan, { at: 4.15, dur: 2.45, fromScale: 1, toScale: 1.05, x: [0, 10], y: [0, -8] });
+        tl.to(chan, { opacity: 0, y: 130, scaleY: 0.7 }, { at: 6.6, dur: 0.7, ease: 'inCubic' });
+
+        // ---- 第二拍 7–14：帧格从轴里长出来；标题交换（旧的收回轴、新的从轴长出）----
+        tl.to(q('.tk-kicker'), { opacity: 0, y: 60 }, { at: 6.5, dur: 0.45, ease: 'inCubic' });
+        tl.to(q('.tk-h1'), { opacity: 0, y: 96 }, { at: 6.55, dur: 0.45, ease: 'inCubic' });
+        tl.to(q('.tk-lede'), { opacity: 0, y: 66 }, { at: 6.6, dur: 0.45, ease: 'inCubic' });
+        fx.staggerIn(tl, cellEls, { at: 7.1, stagger: 0.012, dur: 0.5, from: { opacity: 0, y: 24 } });
+        // 旧标题先收回轴，新的再从轴上长出来：两者不同时在场，不做叠化
+        tl.from(q('.tk-h2'), { opacity: 0, y: 50 }, { at: 7.55, dur: 0.85, ease: 'outCubic' });
+        tl.from(q('.tk-sub'), { opacity: 0, y: -18 }, { at: 7.95, dur: 0.8, ease: 'outCubic' });
+        tl.from(q('.tk-note'), { opacity: 0, y: 14 }, { at: 10.6, dur: 0.7, ease: 'outCubic' });
+        tl.to(q('.tk-axis'), { opacity: 0.35 }, { at: 8.2, dur: 0.7 });
+
+        // ---- 第三拍 14–22：帧格拉成代码行，光标点出渲染日志 ----
+        tl.to(q('.tk-h2'), { opacity: 0, y: 74 }, { at: 13.9, dur: 0.55, ease: 'inCubic' });
+        tl.to(q('.tk-sub'), { opacity: 0, y: 46 }, { at: 14.0, dur: 0.55, ease: 'inCubic' });
+        cellEls.forEach((c, i) => {
+          const g = Math.floor(i / 5), k = i % 5;
+          const dx = C0 - cellX(i), dy = CY + g * CDY - 686;
+          const at = 14.4 + g * 0.055 + k * 0.012;
+          if (k === 0) tl.to(c, { x: dx, y: dy, scaleX: CW / 30, scaleY: 0.44 }, { at, dur: 0.75, ease: 'inOutCubic' });
+          else tl.to(c, { x: dx, y: dy, scaleY: 0.44, opacity: 0 }, { at, dur: 0.6, ease: 'inOutCubic' });
+        });
+        tickEls.forEach((tk) => tl.to(tk, { opacity: 0 }, { at: 15.2, dur: 0.6 }));
+        lineEls.forEach((l, g) => {
+          tl.from(l, { opacity: 0, x: -16 }, { at: 15.6 + g * 0.09, dur: 0.45, ease: 'outCubic' });
+        });
+        cursorIn(tl, el, [
+          { at: 16.9, to: [1290, 740], dur: 0.8 },
+          { at: 17.7, to: [1180, 430], dur: 0.8, click: true },
+          { at: 20.8, to: [1560, 800], dur: 1.0 },
+          { hide: 21.7 },
+        ]);
+        tl.from(q('.tk-log'), { opacity: 0, y: 24 }, { at: 18.6, dur: 0.8, ease: 'outCubic' });
+        fx.staggerIn(tl, qa('.tk-logline'), { at: 18.9, stagger: 0.35, dur: 0.55, from: { opacity: 0 } });
+        // 停 19.6–21.8
+
+        // ---- 第四拍 22–30：八行收成一条线，成为收尾字标的下划线 ----
+        tl.to(q('.tk-log'), { opacity: 0, y: -22 }, { at: 21.7, dur: 0.5 });
+        lineEls.forEach((l) => tl.to(l, { opacity: 0 }, { at: 21.85, dur: 0.4 }));
+        bars.forEach((c, g) => {
+          // x/y 是相对帧格原始位置的位移：收拢到 (700, 496) 这条下划线上
+          tl.to(c, { x: 700 - cellX(g * 5), y: 496 - 686, scaleX: 520 / 30 }, { at: 22.0 + g * 0.03, dur: 0.7, ease: 'inOutCubic' });
+          if (g > 0) tl.to(c, { opacity: 0 }, { at: 22.6 + g * 0.03, dur: 0.35 });
+        });
+        tl.from(q('.tk-end'), { opacity: 0, y: 54 }, { at: 23.2, dur: 0.95, ease: 'outCubic' });
+        tl.from(q('.tk-lede2'), { opacity: 0, y: -20 }, { at: 23.8, dur: 0.8, ease: 'outCubic' });
+        tl.from(q('.tk-repo'), { opacity: 0 }, { at: 24.5, dur: 0.8, ease: 'outQuad' });
+        const chan2 = q('.tk-chan2');
+        tl.fromTo(chan2, { opacity: 0, y: 130, scaleY: 0.84 }, { opacity: 1, y: 0, scaleY: 1 }, { at: 25.1, dur: 1.1, ease: 'outCubic' });
+        // 停 26.5–30：内容层基本落定，只让 chan2 做一次缓慢的纪录片式推近（非节拍、非抖动）
+        fx.kenBurns(tl, chan2, { at: 26.2, dur: 3.8, fromScale: 1, toScale: 1.06, x: [0, -12], y: [0, -8] });
+      },
+    }],
+  });
+</script>
+</body>
+</html>

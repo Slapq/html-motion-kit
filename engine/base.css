@@ -29,17 +29,23 @@ html.export body { display: block; height: auto; }
 .caret::after { content: "▍"; color: var(--accent); margin-left: 2px; }
 
 .captions {
-  position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%); z-index: 9999;
-  max-width: 86%; text-wrap: balance; padding: 14px 28px; border-radius: 14px; text-align: center;
-  font-size: 40px; line-height: 1.35; font-weight: 600;
-  background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(8px); color: #fff; opacity: 0; pointer-events: none;
+  position: absolute; left: 50%; bottom: 72px; transform: translateX(-50%); z-index: 9999;
+  max-width: 72%; text-wrap: balance; padding: 10px 22px; border-radius: 10px; text-align: center;
+  font-size: 34px; line-height: 1.4; font-weight: 500; letter-spacing: .01em;
+  background: rgba(10, 12, 18, 0.42); backdrop-filter: blur(10px); color: #fff; opacity: 0; pointer-events: none;
 }
+html.light .captions { background: rgba(255,255,255,.78); color: var(--fg); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(16,24,40,.06); }
 .captions:empty { display: none; }
+.stage:has(.progress-axis) .captions { bottom: 128px; }
 
 .fx-cursor { position: absolute; left: 0; top: 0; z-index: 9000; pointer-events: none; margin: -4px 0 0 -4px; filter: drop-shadow(0 4px 8px rgba(0,0,0,.5)); }
 .fx-cursor i { position: absolute; left: -16px; top: -16px; width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--accent); opacity: 0; }
 .fx-highlight { position: absolute; z-index: 8000; border: 4px solid var(--c); border-radius: 16px; box-shadow: 0 0 0 9999px rgba(0,0,0,.45), 0 0 40px var(--c); pointer-events: none; opacity: 0; }
+html.light .fx-highlight { box-shadow: 0 0 0 9999px rgba(16,24,40,.12), 0 0 0 10px color-mix(in srgb, var(--c) 18%, transparent); }
+html.light .fx-cursor { filter: drop-shadow(0 3px 6px rgba(16,24,40,.25)); }
 .fx-particles { position: absolute; inset: 0; pointer-events: none; }
+.carry-box { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: visible; }
+.carry-box > * { will-change: transform, opacity; }
 .puppet { position: absolute; }
 
 /* Ready-made building blocks */
@@ -102,3 +108,36 @@ html.export .controls { display: none; }
 .inspector .empty { color: #777; }
 html.export .inspector { display: none; }
 .dup-item { position: absolute; left: 0; top: 0; }
+
+/* Light look: white + one accent (createVideo({ look: 'light' })). */
+html.light {
+  --bg: #ffffff; --fg: #1f2733; --muted: #5b6675; --faint: #5f6b7d; --line: #e6ebf2;
+  --accent: #1a73e8; --accent2: #8ab4f8; --accent-soft: #e8f0fe; --card: #ffffff;
+}
+html.light .card { background: #fff; border: 1px solid var(--line); box-shadow: 0 18px 48px rgba(16,24,40,.07); backdrop-filter: none; }
+html.light .bullets li::before { background: var(--accent); }
+.bg-soft { background: radial-gradient(1200px 800px at 8% 0%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 58%), radial-gradient(1100px 820px at 96% 100%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 60%), var(--bg); }
+
+/* Continuous mode (createVideo({ chapters })) */
+.film { visibility: visible; background: var(--bg); }
+.film > .bg-layer { position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; }
+.film > .strip { position: absolute; left: 0; top: 0; z-index: 2; will-change: transform; }
+.strip > .panel { position: absolute; top: 0; overflow: visible; }
+.film > .hud { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.progress-axis { position: absolute; left: 160px; right: 160px; bottom: 62px; }
+.progress-axis .pa-line { position: relative; height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--fg) 10%, transparent); }
+.progress-axis .pa-fill { position: absolute; inset: 0; border-radius: 2px; background: var(--accent); transform-origin: left center; }
+.progress-axis .pa-head { position: absolute; top: 50%; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 14%, transparent); }
+.progress-axis .pa-ticks { position: relative; height: 0; }
+.progress-axis .pa-tick { position: absolute; top: 0; }
+.progress-axis .pa-tick i { position: absolute; left: -1px; top: -7px; width: 3px; height: 11px; border-radius: 2px; background: color-mix(in srgb, var(--fg) 22%, transparent); }
+.progress-axis .pa-tick i.on { background: var(--accent); opacity: 0; }
+.progress-axis .pa-tick b { position: absolute; left: 0; top: 16px; white-space: nowrap; font-size: 16px; font-weight: 500; color: var(--muted); letter-spacing: .04em; }
+.progress-axis .pa-tick:first-child b { left: 0; }
+
+/* Restrained type scale for both models */
+.kicker { display: inline-block; padding: 10px 20px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: color-mix(in srgb, var(--accent) 80%, var(--fg)); font-size: 19px; font-weight: 600; letter-spacing: .16em; }
+.h1 { margin: 26px 0 0; font-size: 104px; font-weight: 700; letter-spacing: -2px; }
+.h2 { margin: 0; font-size: 64px; font-weight: 700; letter-spacing: -1.4px; }
+.lede { margin: 24px 0 0; font-size: 36px; color: var(--muted); }
+.sub { margin: 16px 0 0; font-size: 28px; color: var(--muted); }

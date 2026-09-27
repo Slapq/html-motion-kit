@@ -31,7 +31,8 @@ function applyEl(el, v) {
   }
   if ('opacity' in v) st.opacity = clamp(v.opacity);
   if ('blur' in v || 'brightness' in v) {
-    st.filter = `blur(${Math.max(0, v.blur ?? 0)}px) brightness(${v.brightness ?? 1})`;
+    el._tlFilter = `blur(${Math.max(0, v.blur ?? 0)}px) brightness(${v.brightness ?? 1})`;
+    st.filter = [...Object.values(el._styleSlots || {}), el._tlFilter].join(' '); // style.js filters go first
   }
   if ('clip' in v) st.clipPath = `inset(0 ${(1 - clamp(v.clip)) * 100}% 0 0)`;
   for (const k in v) if (k.startsWith('--')) st.setProperty(k, v[k]);

@@ -1,0 +1,12 @@
+{
+  "defaults": {
+    "quality": "high",
+    "size": "1536x1024"
+  },
+  "images": [
+    {
+      "out": "assets/hero.png",
+      "prompt": "Clean minimal product illustration on a white background, single blue accent, generous empty space, no text, no logos"
+    }
+  ]
+}

@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>HTML Motion Kit</title>
+  <link rel="stylesheet" href="../../engine/base.css">
+  <style>
+    /* 单文件只有一份全局 CSS：通用件统一 mk- 前缀，章节专属件用 cN- 前缀（docs/lessons.md §4） */
+    .progress-axis .pa-tick b { color: #414b5c; }
+    .mk-wrap { position: absolute; left: 160px; right: 160px; top: 0; bottom: 150px; display: flex; flex-direction: column; justify-content: center; }
+    .mk-wrap.mid { align-items: center; text-align: center; }
+    .mk-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 70px; align-items: center; }
+    .mk-card { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 30px 34px; box-shadow: 0 18px 48px rgba(16,24,40,.07); }
+    .mk-code { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 18px; padding: 26px 32px 28px; box-shadow: 0 18px 48px rgba(16,24,40,.07); }
+    .mk-file { display: block; font-family: var(--mono); font-size: 18px; letter-spacing: .12em; text-transform: uppercase; color: #414b5c; margin-bottom: 16px; }
+    .mk-line { display: block; font-family: var(--mono); font-size: 23px; line-height: 1.6; color: #34435c; white-space: pre; }
+    .mk-line.acc { color: #2544c2; }
+    .mk-list { display: flex; flex-direction: column; gap: 15px; margin-top: 34px; }
+    .mk-item { display: flex; align-items: flex-start; gap: 14px; font-size: 25px; color: var(--muted); }
+    .mk-item::before { content: ""; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); margin-top: 11px; }
+    .mk-chips { display: flex; gap: 14px; margin-top: 32px; }
+    .mk-chip { padding: 12px 22px; border-radius: 999px; background: var(--accent-soft); color: #2544c2; font-size: 24px; font-weight: 600; }
+    .chan { display: block; will-change: transform; }
+    .chan.abs { position: absolute; }
+
+    /* 伪光标：比引擎默认的 36px 大一档，1920 画面里才看得清 */
+    .vc { position: absolute; left: 0; top: 0; z-index: 9000; pointer-events: none;
+      filter: drop-shadow(0 4px 10px rgba(16,24,40,.3)); }
+    .vc i { position: absolute; left: 3px; top: 3px; width: 44px; height: 44px; margin: -22px 0 0 -22px;
+      border-radius: 50%; border: 3px solid var(--accent); opacity: 0; }
+
+    /* 常驻 HUD */
+    .mk-top { position: absolute; left: 64px; right: 64px; top: 40px; display: flex; align-items: center; justify-content: space-between;
+      font-size: 19px; font-weight: 600; letter-spacing: .18em; text-transform: uppercase; color: #414b5c; }
+    .mk-brand { display: flex; align-items: center; gap: 14px; }
+    .mk-avatar { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; object-position: 50% 32%;
+      box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent); }
+    .mk-tc { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: .06em; }
+
+    /* 01 开场 */
+    .c1-tag { margin: 30px 0 0; font-size: 30px; color: var(--faint); }
+    .c1-chan { right: 130px; top: 400px; height: 500px; }
+
+    /* 02 痛点 */
+    .c2-big { display: block; font-size: 38px; color: var(--accent); letter-spacing: -.5px; }
+    .c2-p { margin: 16px 0 0; font-size: 25px; line-height: 1.55; color: var(--muted); }
+    .c2-bridge { margin: 30px 0 0; font-size: 27px; color: var(--faint); }
+    .c2-chan { width: 196px; margin: 14px auto 0; }
+
+    /* 03 帧精确 */
+    .c3-card { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 32px 36px 34px; box-shadow: 0 18px 48px rgba(16,24,40,.07); }
+    .c3-label { display: block; font-family: var(--mono); font-size: 18px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+    .c3-track { position: relative; height: 58px; margin-top: 30px; }
+    .c3-rail { position: absolute; left: 0; right: 0; top: 28px; height: 3px; border-radius: 2px; background: color-mix(in srgb, var(--fg) 10%, transparent); }
+    .c3-play { position: absolute; top: 12px; left: 0; width: 4px; height: 34px; border-radius: 2px; background: var(--accent);
+      box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 12%, transparent); }
+    .c3-mark { position: absolute; top: 24px; width: 2px; height: 11px; background: color-mix(in srgb, var(--fg) 20%, transparent); }
+    .c3-frames { display: flex; gap: 4px; margin-top: 6px; }
+    .c3-cell { flex: 1; height: 26px; border-radius: 3px; background: color-mix(in srgb, var(--fg) 7%, transparent); }
+    .c3-read { margin-top: 28px; font-size: 26px; color: var(--muted); }
+    .c3-read b { font-family: var(--mono); color: var(--fg); }
+
+    /* 04 怎么写 */
+    .c4-log { margin-top: 22px; }
+    .c4-logline { display: block; font-family: var(--mono); font-size: 22px; line-height: 1.7; color: #2f7d4f; }
+    .c4-logline.dim { color: var(--muted); }
+
+    /* 05 节点图 */
+    .c5-nodes { display: flex; flex-direction: column; gap: 18px; }
+    .c5-node { padding: 22px 26px; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: 0 14px 34px rgba(16,24,40,.06); }
+    .c5-kind { display: block; font-family: var(--mono); font-size: 21px; color: var(--accent); letter-spacing: .04em; }
+    .c5-desc { display: block; margin-top: 8px; font-size: 24px; color: var(--muted); }
+    .c5-note { margin: 30px 0 0; font-size: 25px; color: var(--faint); }
+
+    /* 06 融合 */
+    .c6-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
+    .c6-card { padding: 26px 30px; border: 1px solid var(--line); border-radius: 18px; background: #fff; box-shadow: 0 14px 34px rgba(16,24,40,.06); }
+    .c6-src { display: block; font-size: 20px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
+    .c6-t { display: block; margin-top: 10px; font-size: 30px; font-weight: 700; }
+    .c6-d { display: block; margin-top: 8px; font-size: 23px; color: var(--muted); }
+    .c6-note { margin: 32px 0 0; font-size: 26px; color: var(--faint); }
+    .c6-kick { margin-bottom: 16px; }
+
+    /* 07 声音 */
+    .c7-mixer { display: flex; align-items: flex-end; gap: 9px; height: 130px; margin: 26px 0 0; }
+    .c7-bar { flex: 1; border-radius: 4px 4px 2px 2px; background: linear-gradient(180deg, var(--accent), var(--accent2)); height: 20px; }
+    .c7-note { display: block; margin-top: 22px; font-size: 23px; color: var(--muted); }
+
+    /* 08 DSH */
+    .c8-tools { display: flex; flex-direction: column; gap: 16px; }
+    .c8-tool { display: flex; align-items: baseline; gap: 16px; padding: 18px 24px; border: 1px solid var(--line); border-radius: 14px; background: #fff; box-shadow: 0 14px 34px rgba(16,24,40,.06); }
+    .c8-name { font-family: var(--mono); font-size: 24px; color: var(--accent); }
+    .c8-desc { font-size: 23px; color: var(--muted); }
+    .c8-right { display: flex; flex-direction: column; }
+    .c8-chat { padding: 26px 30px; }
+    .c8-q { display: block; font-size: 26px; color: var(--fg); }
+    .c8-a { display: block; margin-top: 14px; font-family: var(--mono); font-size: 22px; line-height: 1.7; color: #2f7d4f; }
+    .c8-think { display: flex; align-items: flex-start; gap: 22px; margin-top: 20px; }
+    .c8-chan { width: 158px; }
+    .c8-bubble { position: relative; margin-top: 8px; padding: 13px 24px; border-radius: 18px; background: #fff;
+      border: 1px solid var(--line); box-shadow: 0 14px 34px rgba(16,24,40,.06); font-size: 24px; color: var(--fg); }
+    .c8-bubble::after { content: ""; position: absolute; left: -8px; top: 22px; width: 14px; height: 14px; background: #fff;
+      border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); transform: rotate(45deg); }
+
+    /* 09 上手 */
+    .c9-steps { display: flex; flex-direction: column; gap: 20px; margin-top: 44px; }
+    .c9-step { display: flex; align-items: center; gap: 26px; padding: 22px 30px; border: 1px solid var(--line); border-radius: 16px; background: #fff; box-shadow: 0 14px 34px rgba(16,24,40,.06); }
+    .c9-n { flex: none; width: 54px; height: 54px; border-radius: 50%; background: var(--accent-soft); color: var(--accent);
+      display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; }
+    .c9-cmd { font-family: var(--mono); font-size: 27px; color: var(--fg); }
+    .c9-note { margin-left: auto; font-size: 23px; color: var(--muted); }
+    .c9-tail { margin: 32px 0 0; font-size: 26px; color: var(--faint); }
+    .c9-chips { margin-top: 24px; }
+
+    /* 10 收尾 */
+    .c10-chan { left: 150px; top: 420px; height: 480px; }
+    .c10-sub { margin: 14px 0 0; font-size: 27px; color: var(--faint); font-family: var(--mono); }
+  </style>
+</head>
+<body>
+<script type="module">
+  import { createVideo, fx } from '../../engine/index.js';
+
+  // 2 分钟版：十章横排在 19200px 长画布上，镜头一路右移（1920px / 1.6s，峰值 ≤80px/帧）。
+  // 视频层全程不停：镜头漂移 + 背景点阵 + 进度轴 + HUD 时间码；无 BGM，只有离散音效。
+  const TOTAL = 91.1;
+  // 大肥鱼 = DeepSeek 鲸鱼娘：以你给的三张参考图为参考，用 image2.5 生成的透明底素材
+  const CHAN = { hero: 'assets/chan-hero.png', think: 'assets/chan-think.png', tired: 'assets/chan-tired.png', avatar: 'assets/chan-avatar.png' };
+  const cimg = (cls, src) => `<img class="chan ${cls}" src="${src}" alt="">`;
+
+  // 转场曲线：梯形速度（18% 加速 / 匀速 / 18% 减速）。峰值斜率 1.22，所以 1920px
+  // 只需 1.0s（inOutQuad 要 1.6s），峰值 78px/帧仍在审计的 80 上限内。
+  const snapCam = (u) => {
+    const a = 0.18, V = 1 / (1 - a);
+    if (u <= 0) return 0;
+    if (u >= 1) return 1;
+    if (u < a) return (V * u * u) / (2 * a);
+    if (u > 1 - a) return 1 - (V * (1 - u) ** 2) / (2 * a);
+    return (V * a) / 2 + V * (u - a);
+  };
+
+  // 角色入场：一次有目的的位移淡入，之后是极慢的呼吸 + 摆动（不是抖动）
+  function floatIn(tl, el, { at, dx = 0, dy = 48, dur = 1.2, ease = 'outCubic', bob = 9, breath = 0.013 } = {}) {
+    tl.fromTo(el, { x: dx, y: dy, opacity: 0, scale: 0.94 }, { x: 0, y: 0, opacity: 1, scale: 1 }, { at, dur, ease });
+    tl.modify(el, (lt) => ({
+      y: Math.sin(lt * 0.42) * bob,
+      rotate: Math.sin(lt * 0.27 + 1.1) * 0.9,
+      scaleY: 1 + Math.sin(lt * 1.55) * breath,
+      scaleX: 1 - Math.sin(lt * 1.55) * breath * 0.5,
+    }), { at: at + dur, dur: 300 });
+  }
+
+  // 被点到时弹一下：挤压 → 回弹（绕中心，不位移）；成片无音效，画面自己说话
+  function react(tl, el, at, { amp = 0.11, dur = 0.62 } = {}) {
+    tl.to(el, { scaleY: 1 - amp, scaleX: 1 + amp * 0.7 }, { at, dur: dur * 0.28, ease: 'outQuad' });
+    tl.to(el, { scaleY: 1 + amp * 0.45, scaleX: 1 - amp * 0.3 }, { at: at + dur * 0.28, dur: dur * 0.26, ease: 'outQuad' });
+    tl.to(el, { scaleY: 1, scaleX: 1 }, { at: at + dur * 0.54, dur: dur * 0.46, ease: 'outBack' });
+  }
+
+  // 伪光标：挂进章节面板（跟着镜头走），可按元素定位；引擎自带的 fx.cursor 只在
+  // 构建期量一次坐标，连续模式下镜头一动就偏，所以这里自己实现。
+  function cursorIn(tl, panel, steps) {
+    const c = document.createElement('div');
+    c.className = 'vc';
+    c.innerHTML = '<svg viewBox="0 0 24 24" width="52" height="52"><path d="M3 2l7 19 2.6-7.8L20 11z" fill="#fff" stroke="#141F45" stroke-width="1.6" stroke-linejoin="round"/></svg><i></i>';
+    panel.appendChild(c);
+    const ring = c.querySelector('i');
+    const local = (t, fx, fy) => {
+      const r = t.getBoundingClientRect(), p = panel.getBoundingClientRect();
+      return [r.left - p.left + r.width * fx, r.top - p.top + r.height * fy];
+    };
+    // tl.set / fromTo 在"开始之前"分别返回 DEFAULTS 和 from 值，而面板常常在章节
+    // 开始前就被镜头带进画面（到位后还留 10px/s 漂移），所以要在很早的时刻（局部
+    // -60s）就把光标藏到画外，否则没出场的光标会亮着停在面板左上角。
+    const f = steps.find((s) => s.to !== undefined);
+    const [ix, iy] = Array.isArray(f.to) ? f.to : local(f.to, f.fx ?? 0.5, f.fy ?? 0.5);
+    tl.set(c, { x: ix + 240, y: iy + 200, opacity: 0, scale: 1 }, { at: -60 });
+    tl.set(ring, { opacity: 0, scale: 0.2 }, { at: -60 });
+    for (const st of steps) {
+      const hasTo = st.to !== undefined;
+      const [px, py] = hasTo ? (Array.isArray(st.to) ? st.to : local(st.to, st.fx ?? 0.5, st.fy ?? 0.5)) : [0, 0];
+      if (hasTo) tl.to(c, { x: px, y: py, opacity: st.opacity ?? 1 }, { at: st.at, dur: st.dur ?? 0.85, ease: st.ease || 'inOutCubic' });
+      if (st.click) {
+        const ct = st.at + (st.dur ?? 0.85);
+        tl.to(c, { scale: 0.82 }, { at: ct, dur: 0.08 });
+        tl.to(c, { scale: 1 }, { at: ct + 0.08, dur: 0.16 });
+        tl.fromTo(ring, { scale: 0.2, opacity: 0.9 }, { scale: 2.2, opacity: 0 }, { at: ct, dur: 0.5, ease: 'outCubic' });
+        if (st.press) {
+          tl.to(st.press, { scale: 0.97 }, { at: ct, dur: 0.08 });
+          tl.to(st.press, { scale: 1 }, { at: ct + 0.08, dur: 0.24, ease: 'outBack' });
+        }
+        st.then?.(ct);
+      }
+      if (st.hide) tl.to(c, { opacity: 0 }, { at: st.hide, dur: 0.45 });
+    }
+    return c;
+  }
+  // 章节转场声：气流 + 到位轻点（无 BGM、无配音，只留离散音效）
+
+  await createVideo({
+    width: 1920, height: 1080, fps: 30,
+    look: 'light',
+    theme: { accent: '#4D6BFE' },
+    background: { type: 'network', guides: false },
+    progress: true,
+    // drift: 0 —— 到位后镜头不再以 10px/s 无意义地左移（"为了动而动"）
+    camera: { ease: snapCam, maxPx: 80, drift: 0 },
+
+    hud: `
+      <div class="mk-top">
+        <span class="mk-brand"><img class="mk-avatar" src="${CHAN.avatar}" alt="">HTML Motion Kit · DeepSeek Harness</span>
+        <span class="mk-tc">000.0 / 91.1</span>
+      </div>`,
+
+    build(tl, film) {
+      const tc = film.querySelector('.mk-tc');
+      const av = film.querySelector('.mk-avatar');
+      tl.add((lt, t) => {
+        tc.textContent = `${t.toFixed(1).padStart(5, '0')} / ${TOTAL.toFixed(1)}`;
+        av.style.transform = `translateY(${(Math.sin(t * 0.7) * 3).toFixed(2)}px)`;
+      }, { at: 0, label: 'hud:readout' });
+    },
+
+    chapters: [
+      // ---------------------------------------------------------------- 01 开场 11.0s
+      {
+        id: 'intro', title: '开场', dur: 9.1,
+        html: `
+          <div class="mk-wrap mid">
+            <span class="kicker">DeepSeek Harness 插件</span>
+            <h1 class="h1">HTML Motion Kit</h1>
+            <p class="lede">用 HTML 写视频，逐帧导出 MP4</p>
+            <p class="c1-tag">画面是时间 t 的纯函数</p>
+          </div>
+          ${cimg('c1-chan abs', CHAN.hero)}`,
+        build(tl, el) {
+          const q = (s) => el.querySelector(s);
+          tl.from(q('.kicker'), { opacity: 0, y: 16 }, { at: 0.15, dur: 0.7, ease: 'outCubic' });
+          fx.textIn(tl, q('.h1'), { at: 0.35, preset: 'line' });
+          fx.textIn(tl, q('.lede'), { at: 0.7, preset: 'line' });
+          fx.textIn(tl, q('.c1-tag'), { at: 5.8, preset: 'fade' });
+          const ch = q('.c1-chan');
+          floatIn(tl, ch, { at: 1.0, dx: -260, dy: 30, dur: 1.4, bob: 12 });
+          // 伪光标来找大肥鱼打招呼：点一下 → 她弹一下
+          cursorIn(tl, el, [
+            { at: 2.9, to: [1180, 900], dur: 1.1 },
+            { at: 4.1, to: ch, fx: 0.63, fy: 0.26, dur: 0.85, click: true, then: (ct) => react(tl, ch, ct) },
+            { at: 6.5, to: [1520, 320], dur: 1.2 },
+            { hide: 8.1 },
+          ]);
+        },
+      },
+
+      // ---------------------------------------------------------------- 02 痛点 11.5s
+      {
+        id: 'why', title: '为什么', dur: 8.1, rhythm: 'breathing',
+        html: `
+          <div class="mk-wrap">
+            <div class="mk-grid2">
+              <div>
+                <h2 class="h2">做一支片子，不该这么重</h2>
+                <p class="sub">模板改不动，特效对不上时间，复用全靠手工</p>
+                <div class="mk-list">
+                  <span class="mk-item">剪辑软件：改一版，重剪一遍</span>
+                  <span class="mk-item">PPT 模板：一动就出戏</span>
+                  <span class="mk-item">录屏工具：帧率与音画对不齐</span>
+                </div>
+                <p class="c2-bridge">于是有了 HTML Motion Kit</p>
+              </div>
+              <div>
+                <div class="mk-card">
+                  <b class="c2-big">改一版 = 改一行代码</b>
+                  <p class="c2-p">章节、时长、缓动、字幕、音效，全部写在同一个 HTML 文件里</p>
+                </div>
+                ${cimg('c2-chan', CHAN.tired)}
+              </div>
+            </div>
+          </div>`,
+        build(tl, el, ctx) {
+          const q = (s) => el.querySelector(s);
+          fx.textIn(tl, q('.h2'), { at: 0.15, preset: 'line' });
+          fx.textIn(tl, q('.sub'), { at: 0.35, preset: 'line' });
+          fx.staggerIn(tl, el.querySelectorAll('.mk-item'), { at: 0.9, stagger: 0.3, dur: 0.6, from: { opacity: 0, x: 24 } });
+          tl.from(q('.c2-bridge'), { opacity: 0, y: 16 }, { at: 2.4, dur: 0.8, ease: 'outCubic' });
+          tl.from(q('.mk-card'), { opacity: 0, y: 26 }, { at: 3.2, dur: 0.9, ease: 'outCubic' });
+          floatIn(tl, q('.c2-chan'), { at: 4.6, dy: 34, dur: 1.0, bob: 5 });
+        },
+      },
+
+      // ---------------------------------------------------------------- 03 帧精确 12.5s
+      {
+        id: 'time', title: '帧精确', dur: 10.0,
+        html: `
+          <div class="mk-wrap">
+            <div class="mk-grid2">
+              <div>
+                <h2 class="h2">画面 = 时间 t 的函数</h2>
+                <p class="sub">拖动预览、跳章、逐帧导出，看到的就是导出的</p>
+                <div class="mk-chips">
+                  <span class="mk-chip">可拖动时间轴</span>
+                  <span class="mk-chip">可跳章预览</span>
+                  <span class="mk-chip">逐帧一致</span>
+                </div>
+              </div>
+              <div class="c3-card">
+                <span class="c3-label">本片自己的时间轴 · 120.0s · 3600 帧</span>
+                <div class="c3-track">
+                  <i class="c3-rail"></i>
+                  <i class="c3-play"></i>
+                </div>
+                <div class="c3-frames">
+                  ${Array.from({ length: 40 }, () => '<i class="c3-cell"></i>').join('')}
+                </div>
+                <div class="c3-read">现在 t = <b class="c3-t">00.00s</b> ，第 <b class="c3-f">0000</b> 帧</div>
+              </div>
+            </div>
+          </div>`,
+        build(tl, el, ctx) {
+          const q = (s) => el.querySelector(s);
+          fx.textIn(tl, q('.h2'), { at: 0.3, preset: 'line' });
+          fx.textIn(tl, q('.sub'), { at: 0.6, preset: 'line' });
+          fx.staggerIn(tl, el.querySelectorAll('.mk-chip'), { at: 1.1, stagger: 0.16, dur: 0.6, from: { opacity: 0, y: 18 } });
+          tl.from(q('.c3-card'), { opacity: 0, y: 28 }, { at: 1.2, dur: 0.9, ease: 'outCubic' });
+          fx.staggerIn(tl, el.querySelectorAll('.c3-cell'), { at: 2.2, stagger: 0.03, dur: 0.4, from: { opacity: 0, scaleY: 0.2 } });
+          // 每帧读数：用全局时间驱动本片的迷你时间轴
+          const play = q('.c3-play'), tEl = q('.c3-t'), fEl = q('.c3-f'), cells = [...el.querySelectorAll('.c3-cell')];
+          tl.add((lt, t) => {
+            const p = Math.max(0, Math.min(1, t / TOTAL));
+            play.style.left = (p * 100).toFixed(3) + '%';
+            tEl.textContent = t.toFixed(2) + 's';
+            fEl.textContent = String(Math.round(t * 30)).padStart(4, '0');
+            for (let i = 0; i < cells.length; i++) {
+              cells[i].style.background = (i + 1) / cells.length <= p
+                ? 'var(--accent)' : 'color-mix(in srgb, var(--fg) 7%, transparent)';
+            }
+          }, { at: 0, label: 'demo:timeline' });
+          // 光标在迷你时间轴上点一下（"可拖动预览"的演示）
+          const card3 = q('.c3-card');
+          cursorIn(tl, el, [
+            { at: 4.6, to: card3, fx: 0.3, fy: 0.6, dur: 0.95, click: true, press: card3 },
+            { at: 6.0, to: [1250, 560], dur: 1.0 },
+            { at: 7.6, to: [1480, 850], dur: 1.0 },
+            { hide: 9.6 },
+          ]);
+          // 时间轴面板本身不停脈冲一下，避免"讲完就静止"（不牵动亮度/位移，只是描边框提示）
+          fx.highlight(tl, el, card3, { at: 3.3, dur: 1.5 });
+          fx.highlight(tl, el, card3, { at: 6.0, dur: 1.7 });
+          fx.highlight(tl, el, card3, { at: 8.6, dur: 1.3 });
+        },
+      },
+
+      // ---------------------------------------------------------------- 04 怎么写 13.0s
+      {
+        id: 'code', title: '怎么写', dur: 12.0,
+        html: `
+          <div class="mk-wrap">
+            <div class="mk-grid2">
+              <div>
+                <h2 class="h2">写代码就是做动画</h2>
+                <p class="sub">一个 createVideo，一段 build 函数，就是一章</p>
+                <div class="mk-list">
+                  <span class="mk-item">缓动、转场、字幕、音效挂在同一条时间轴</span>
+                  <span class="mk-item">不用 setTimeout，不用 CSS 动画</span>
+                </div>
+              </div>
+              <div>
+                <div class="mk-code">
+                  <span class="mk-file">index.html</span>
+                  <span class="mk-line acc">await createVideo({</span>
+                  <span class="mk-line">  fps: 30, look: 'light',</span>
+                  <span class="mk-line">  chapters: [{</span>
+                  <span class="mk-line">    id: 'intro', dur: 11,</span>
+                  <span class="mk-line">    build: (tl, el) =&gt;</span>
+                  <span class="mk-line">      fx.textIn(tl, el, { preset: 'line' }),</span>
+                  <span class="mk-line">  }],</span>
+                  <span class="mk-line acc">});</span>
+                </div>
+                <div class="mk-card c4-log">
+                  <span class="c4-logline">✓ out.mp4 · 3600 帧 · 120.0s</span>
+                  <span class="c4-logline dim">✓ 音画同步 · 无页面错误</span>
+                </div>
+              </div>
+            </div>
+          </div>`,
+        build(tl, el, ctx) {
+          const q = (s) => el.querySelector(s);
+          fx.textIn(tl, q('.h2'), { at: 0.3, preset: 'line' });
+          fx.textIn(tl, q('.sub'), { at: 0.6, preset: 'line' });
+          fx.staggerIn(tl, el.querySelectorAll('.mk-item'), { at: 1.1, stagger: 0.3, dur: 0.6, from: { opacity: 0, x: 22 } });
+          tl.from(q('.mk-code'), { opacity: 0, y: 26 }, { at: 0.9, dur: 0.9, ease: 'outCubic' });
+          fx.staggerIn(tl, el.querySelectorAll('.mk-line'), { at: 1.4, stagger: 0.12, dur: 0.45, from: { opacity: 0, x: 16 } });
+          // 光标点一下代码块 → 渲染日志跟着跳出来
+          const code4 = q('.mk-code');
+          cursorIn(tl, el, [
+            { at: 3.4, to: [860, 880], dur: 1.0 },
+            { at: 4.4, to: code4, fx: 0.8, fy: 0.9, dur: 0.85, click: true, press: code4 },
+            { at: 6.9, to: [1500, 360], dur: 1.1 },
+            { at: 9.4, to: [1700, 700], dur: 1.3 },
+            { hide: 11.6 },
+          ]);
+          tl.from(q('.c4-log'), { opacity: 0, y: 20 }, { at: 5.35, dur: 0.8, ease: 'outCubic' });
+          fx.staggerIn(tl, el.querySelectorAll('.c4-logline'), { at: 5.7, stagger: 0.35, dur: 0.6, from: { opacity: 0 } });
+          const log4 = q('.c4-log');
+          fx.highlight(tl, el, code4, { at: 2.0, dur: 1.9 });
+          fx.highlight(tl, el, log4, { at: 6.8, dur: 1.75 });
+          fx.highlight(tl, el, log4, { at: 9.5, dur: 1.8 });
+        },
+      },
+
+      // ---------------------------------------------------------------- 05 节点图 11.5s
+      {
+        id: 'graph', title: '节点图', dur: 6.6,
+        html: `
+          <div class="mk-wrap">
+            <div class="mk-grid2">
+              <div>
+                <h2 class="h2">整个场景也可以是一个 JSON</h2>
+                <p class="sub">节点图：参数可以打关键帧、链接、挂行为、写表达式</p>
+                <div class="c5-nodes" style="margin-top:36px">
+                  <div class="c5-node"><b class="c5-kind">channel</b><span class="c5-desc">纯数据通道，供其他节点引用</span></div>
+                  <div class="c5-node"><b class="c5-kind">duplicator</b><span class="c5-desc">批量复制，配分布与衰减</span></div>
+                  <div class="c5-node"><b class="c5-kind">falloff</b><span class="c5-desc">效果器场，权重能叠加混合</span></div>
+                </div>
+                <p class="c5-note">每个属性都记录来源，随时可以导出完整轨迹</p>
+              </div>
+              <div class="mk-code">
+                <span class="mk-file">scene.json</span>
+                <span class="mk-line acc">g.add([</span>
+                <span class="mk-line">  { id: 'dots',</span>
+                <span class="mk-line">    type: 'duplicator',</span>
+                <span class="mk-line">    count: 48,</span>
+                <span class="mk-line">    distribution: { type: 'grid' },</span>
+                <span class="mk-line">    falloff: { type: 'radial',</span>
+                <span class="mk-line">      radius: 360 },</span>
+                <span class="mk-line">    params: { scale: { link: 'beat.v' } } },</span>
+                <span class="mk-line acc">]);</span>
+              </div>
+            </div>
+          </div>`,
+        build(tl, el, ctx) {
+          const q = (s) => el.querySelector(s);
+          fx.textIn(tl, q('.h2'), { at: 0.3, preset: 'line' });
+          fx.textIn(tl, q('.sub'), { at: 0.6, preset: 'line' });
+          tl.from(q('.mk-code'), { opacity: 0, y: 26 }, { at: 0.9, dur: 0.9, ease: 'outCubic' });
+          fx.staggerIn(tl, el.querySelectorAll('.mk-line'), { at: 1.6, stagger: 0.09, dur: 0.45, from: { opacity: 0, x: 16 } });
+          fx.staggerIn(tl, el.querySelectorAll('.c5-node'), { at: 2.9, stagger: 0.4, dur: 0.7, from: { opacity: 0, y: 22 } });
+          tl.from(q('.c5-note'), { opacity: 0, y: 14 }, { at: 5.2, dur: 0.7, ease: 'outCubic' });
+        },
+      },
+
+      // ---------------------------------------------------------------- 06 融合 11.5s
+      {
+        id: 'fusion', title: '融合', dur: 5.1,
+        html: `
+          <div class="mk-wrap">
+            <span class="kicker c6-kick">借鉴</span>
+            <h2 class="h2">把几家的好东西缝进来</h2>
+            <p class="sub">保留节点图与可追溯，同时吸收市面上框架的做法</p>
+            <div class="c6-grid">
+              <div class="c6-card"><b class="c6-src">TouchDesigner</b><span class="c6-t">GLSL 着色器层</span><span class="c6-d">加上音频包络通道</span></div>
+              <div class="c6-card"><b class="c6-src">Cavalry</b><span class="c6-t">复制器与效果器场</span><span class="c6-d">叠加衰减，权重可混合</span></div>
+              <div class="c6-card"><b class="c6-src">Remotion</b><span class="c6-t">input props</span><span class="c6-d">同一页面换数据，分块并行导出</span></div>
+              <div class="c6-card"><b class="c6-src">Motion Canvas</b><span class="c6-t">命名标记</span><span class="c6-d">用标记对齐时间事件</span></div>
+            </div>
+            <p class="c6-note">这些能力都是时间的纯函数：可拖动、可跳章、可逐帧导出</p>
+          </div>`,
+        build(tl, el, ctx) {
+          const q = (s) => el.querySelector(s);
+          tl.from(q('.c6-kick'), { opacity: 0, y: 14 }, { at: 0.15, dur: 0.5, ease: 'outCubic' });
+          fx.textIn(tl, q('.h2'), { at: 0.3, preset: 'line' });
+          fx.textIn(tl, q('.sub'), { at: 0.55, preset: 'line' });
+          fx.staggerIn(tl, el.querySelectorAll('.c6-card'), { at: 2.2, stagger: 0.55, dur: 0.75, from: { opacity: 0, y: 26 } });
+          tl.from(q('.c6-note'), { opacity: 0, y: 14 }, { at: 6.9, dur: 0.7, ease: 'outCubic' });
+        },
+      },
+
+      // ---------------------------------------------------------------- 07 声音 12.0s
+      {
+        id: 'sound', title: '声音', dur: 6.5,
+        html: `
+          <div class="mk-wrap">
+            <div class="mk-grid2">
+              <div>
+                <h2 class="h2">声音和素材，也能是代码</h2>
+                <p class="sub">音效全部程序化合成，不用下载素材包</p>
+                <div class="mk-chips">
+                  <span class="mk-chip">whoosh</span>
+                  <span class="mk-chip">thump</span>
+                  <span class="mk-chip">chime</span>
+                  <span class="mk-chip">beat</span>
+                  <span class="mk-chip">tick</span>
+                </div>
+              </div>
+              <div class="mk-card">
+                <span class="mk-file">sfx · 程序化合成</span>
+                <div class="c7-mixer">
+                  ${Array.from({ length: 16 }, () => '<i class="c7-bar"></i>').join('')}
+                </div>
+                <span class="c7-note">合成器画出波形，离线渲染后与画面合流</span>
+              </div>
+            </div>
+          </div>`,
+        build(tl, el, ctx) {
+          const q = (s) => el.querySelector(s);
+          fx.textIn(tl, q('.h2'), { at: 0.3, preset: 'line' });
+          fx.textIn(tl, q('.sub'), { at: 0.6, preset: 'line' });
+          fx.staggerIn(tl, el.querySelectorAll('.mk-chip'), { at: 1.1, stagger: 0.14, dur: 0.55, from: { opacity: 0, y: 16 } });
+          tl.from(q('.mk-card'), { opacity: 0, y: 26 }, { at: 1.4, dur: 0.9, ease: 'outCubic' });
+          const bars = [...el.querySelectorAll('.c7-bar')];
+          tl.add((lt, t) => {
+            for (let i = 0; i < bars.length; i++) {
+              const v = 0.35 + 0.65 * Math.abs(Math.sin(t * 0.45 + i * 0.55) * 0.62 + Math.sin(t * 0.27 + i * 1.1) * 0.38);
+              bars[i].style.height = (16 + v * 104).toFixed(1) + 'px';
+            }
+          }, { at: 0, label: 'demo:mixer' });
+        },
+      },
+
+      // ---------------------------------------------------------------- 08 DSH 13.0s
+      {
+        id: 'dsh', title: '装进 DSH', dur: 13.2,
+        html: `
+          <div class="mk-wrap">
+            <div class="mk-grid2">
+              <div>
+                <h2 class="h2">装进 DeepSeek Harness，让 Agent 写视频</h2>
+                <p class="sub">一个 skill，五个工具：建项目、审画面、抽帧、导出</p>
+                <div class="c8-tools" style="margin-top:34px">
+                  <div class="c8-tool"><b class="c8-name">motion_new</b><span class="c8-desc">生成项目骨架</span></div>
+                  <div class="c8-tool"><b class="c8-name">motion_audit</b><span class="c8-desc">扫全片，报裁切 / 压叠 / 空帧</span></div>
+                  <div class="c8-tool"><b class="c8-name">motion_render</b><span class="c8-desc">并行导出 MP4</span></div>
+                </div>
+              </div>
+              <div class="c8-right">
+                <div class="mk-card c8-chat">
+                  <span class="c8-q">“做一支 2 分钟的宣传片，DeepSeek 主题”</span>
+                  <span class="c8-a">✓ 建项目 projects/deepseek-promo</span>
+                  <span class="c8-a">✓ 写十幕，审计 0 条问题</span>
+                  <span class="c8-a">✓ out.mp4 · 120.0s · 含音效</span>
+                </div>
+                <div class="c8-think">
+                  ${cimg('c8-chan', CHAN.think)}
+                  <span class="c8-bubble">正在思考……</span>
+                </div>
+              </div>
+            </div>
+          </div>`,
+        build(tl, el, ctx) {
+          const q = (s) => el.querySelector(s);
+          fx.textIn(tl, q('.h2'), { at: 0.3, preset: 'line' });
+          fx.textIn(tl, q('.sub'), { at: 0.6, preset: 'line' });
+          fx.staggerIn(tl, el.querySelectorAll('.c8-tool'), { at: 1.2, stagger: 0.28, dur: 0.7, from: { opacity: 0, x: 26 } });
+          tl.from(q('.c8-chat'), { opacity: 0, y: 24 }, { at: 3.0, dur: 0.9, ease: 'outCubic' });
+          const ch8 = q('.c8-chan');
+          floatIn(tl, ch8, { at: 2.4, dy: 30, dur: 1.0, bob: 8 });
+          // 光标把需求"敲"进对话框 → 她开始思考 → 逐条打勾 → 光标再点她一下
+          const chat = q('.c8-chat');
+          cursorIn(tl, el, [
+            { at: 3.4, to: chat, fx: 0.2, fy: 0.3, dur: 0.9, click: true, press: chat },
+            { at: 8.4, to: ch8, fx: 0.64, fy: 0.24, dur: 0.85, click: true, then: (ct) => react(tl, ch8, ct, { amp: 0.09 }) },
+            { at: 11.0, to: [1500, 300], dur: 1.1 },
+            { hide: 12.2 },
+          ]);
+          fx.typewriter(tl, q('.c8-q'), { at: 4.5, cps: 13, caret: false, sfx: null });
+          tl.from(q('.c8-bubble'), { opacity: 0, scale: 0.86, y: 12 }, { at: 6.4, dur: 0.6, ease: 'outBack' });
+          fx.staggerIn(tl, el.querySelectorAll('.c8-a'), { at: 7.4, stagger: 0.45, dur: 0.5, from: { opacity: 0, x: 14 } });
+          fx.highlight(tl, el, chat, { at: 9.4, dur: 1.7 });
+          fx.highlight(tl, el, chat, { at: 11.6, dur: 1.6 });
+        },
+      },
+
+      // ---------------------------------------------------------------- 09 上手 11.0s
+      {
+        id: 'start', title: '上手', dur: 7.8, rhythm: 'breathing',
+        html: `
+          <div class="mk-wrap">
+            <h2 class="h2">三步出片</h2>
+            <p class="sub">装好依赖，生成项目，直接导出</p>
+            <div class="c9-steps">
+              <div class="c9-step"><b class="c9-n">1</b><span class="c9-cmd">npm install</span><span class="c9-note">唯一的依赖是 puppeteer-core</span></div>
+              <div class="c9-step"><b class="c9-n">2</b><span class="c9-cmd">npm run new -- my-video</span><span class="c9-note">浅色模板，开箱审计 0 问题</span></div>
+              <div class="c9-step"><b class="c9-n">3</b><span class="c9-cmd">npm run render -- projects/my-video</span><span class="c9-note">四路并行，录音合成一次完成</span></div>
+            </div>
+            <p class="c9-tail">改完先跑 audit：问题 0 条，再导出</p>
+            <div class="mk-chips c9-chips">
+              <span class="mk-chip">浅色模板开箱 0 问题</span>
+              <span class="mk-chip">四路并行导出</span>
+              <span class="mk-chip">音画一次合成</span>
+            </div>
+          </div>`,
+        build(tl, el, ctx) {
+          const q = (s) => el.querySelector(s);
+          fx.textIn(tl, q('.h2'), { at: 0.3, preset: 'line' });
+          fx.textIn(tl, q('.sub'), { at: 0.6, preset: 'line' });
+          fx.staggerIn(tl, el.querySelectorAll('.c9-step'), { at: 1.2, stagger: 0.32, dur: 0.75, from: { opacity: 0, y: 26 } });
+          fx.textIn(tl, q('.c9-tail'), { at: 3.0, preset: 'fade' });
+          fx.staggerIn(tl, el.querySelectorAll('.c9-chips .mk-chip'), { at: 5.2, stagger: 0.16, dur: 0.6, from: { opacity: 0, y: 16 } });
+        },
+      },
+
+      // ---------------------------------------------------------------- 10 收尾 13.0s
+      {
+        id: 'outro', title: '收尾', dur: 12.7,
+        html: `
+          <div class="mk-wrap mid">
+            <span class="kicker">DeepSeek Harness 插件</span>
+            <h2 class="h2">写 HTML，导出成片</h2>
+            <p class="lede">帧精确、可审计、可复用的动态图形框架</p>
+            <p class="c10-sub">github.com/Slapq/html-motion-kit</p>
+          </div>
+          ${cimg('c10-chan abs', CHAN.hero)}`,
+        build(tl, el, ctx) {
+          const q = (s) => el.querySelector(s);
+          tl.from(q('.kicker'), { opacity: 0, y: 16 }, { at: 0.3, dur: 0.7, ease: 'outCubic' });
+          fx.textIn(tl, q('.h2'), { at: 0.55, preset: 'line' });
+          fx.textIn(tl, q('.lede'), { at: 0.9, preset: 'line' });
+          fx.textIn(tl, q('.c10-sub'), { at: 5.0, preset: 'fade' });
+          const wh = q('.c10-chan');
+          floatIn(tl, wh, { at: 1.6, dx: -220, dy: 44, dur: 1.4, bob: 12 });
+          // 光标来告别：点一下，她挥挥手，然后随全片淡出
+          cursorIn(tl, el, [
+            { at: 3.4, to: [640, 900], dur: 1.0 },
+            { at: 4.8, to: wh, fx: 0.62, fy: 0.26, dur: 0.85, click: true, then: (ct) => react(tl, wh, ct, { amp: 0.1 }) },
+            { at: 6.8, to: [1480, 380], dur: 1.3, opacity: 0.85 },
+            { hide: 8.0 },
+          ]);
+          // 片尾：大肥鱼上升告别，随全片淡出
+          tl.to(wh, { x: -140, y: -70, opacity: 0 }, { at: 9.6, dur: 2.9, ease: 'inOutQuad' });
+        },
+      },
+    ],
+  });
+</script>
+</body>
+</html>

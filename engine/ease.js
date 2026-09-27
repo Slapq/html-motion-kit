@@ -15,6 +15,9 @@ export const ease = {
   inQuad: (t) => t * t,
   outQuad: (t) => 1 - (1 - t) * (1 - t),
   inOutQuad: (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2),
+  inSine: (t) => 1 - Math.cos((t * Math.PI) / 2),
+  outSine: (t) => Math.sin((t * Math.PI) / 2),
+  inOutSine: (t) => -(Math.cos(Math.PI * t) - 1) / 2,
   inCubic: (t) => t ** 3,
   outCubic: (t) => 1 - (1 - t) ** 3,
   inOutCubic: (t) => (t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2),
@@ -32,8 +35,21 @@ export const ease = {
   spring: (t) => 1 - Math.exp(-6 * t) * Math.cos(8 * t),
 };
 
-export const resolveEase = (e) =>
-  typeof e === 'function' ? e : ease[e] || ease.outCubic;
+// No ease → outCubic. An unknown name throws instead of silently animating with the wrong curve.
+export const resolveEase = (e) => {
+  if (typeof e === 'function') return e;
+  if (e == null || e === '') return ease.outCubic;
+  if (!ease[e]) throw new Error(`unknown ease "${e}"; available: ${Object.keys(ease).join(' ')}`);
+  return ease[e];
+};
+
+// Largest slope of an ease on [0,1] (inOutQuad 2, inOutCubic 3, inOutSine π/2). Peak speed = distance / dur × this.
+export function peakSlope(e, n = 1000) {
+  const f = resolveEase(e);
+  let m = 0, prev = f(0);
+  for (let i = 1; i <= n; i++) { const v = f(i / n); m = Math.max(m, Math.abs(v - prev) * n); prev = v; }
+  return m;
+}
 
 export const lerp = (a, b, p) => a + (b - a) * p;
 export const clamp = (v, lo = 0, hi = 1) => (v < lo ? lo : v > hi ? hi : v);

@@ -18,8 +18,10 @@ test('apply registers skill and tools once, disposers unregister', () => {
   const ctx = mockCtx();
   plugin.apply(ctx, {});
   plugin.apply(ctx, {});
-  assert.deepEqual(ctx.tools.map((t) => t.name), ['motion_info', 'motion_new', 'motion_still', 'motion_render']);
+  assert.deepEqual(ctx.tools.map((t) => t.name), ['motion_info', 'motion_new', 'motion_audit', 'motion_still', 'motion_render']);
   assert.equal(ctx.skills.length, 1);
+  // DSH validateDefinition requires string name/description/source/content.
+  for (const k of ['name', 'description', 'source', 'content']) assert.equal(typeof ctx.skills[0][k], 'string', k);
   assert.deepEqual(plugin.inject, ['tools', 'skills']);
   for (const d of ctx.disposers) d();
   assert.equal(ctx.tools.length, 0);
@@ -48,6 +50,9 @@ test('path and argument validation', async () => {
   assert.equal((await tools.motion_render.execute({ project: 'demo', workers: -1 })).ok, false);
   assert.equal((await tools.motion_still.execute({ project: 'demo', t: -1 })).ok, false);
   assert.equal((await tools.motion_new.execute({ name: '../evil' })).ok, false);
+  assert.equal((await tools.motion_new.execute({ name: 'zz-never', mode: 'slides' })).ok, false);
+  assert.equal((await tools.motion_audit.execute({ project: 'no-such-project' })).ok, false);
+  assert.equal((await tools.motion_audit.execute({ project: 'demo', step: -1 })).ok, false);
 });
 
 test('motion_still renders a PNG with props', { timeout: 120000 }, async () => {

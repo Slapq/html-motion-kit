@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>__TITLE__</title>
+  <link rel="stylesheet" href="../../engine/base.css">
+  <style>
+    /* 类名按场景命名空间，别跨场景重名（docs/lessons.md §2.5） */
+    .wrap { position: absolute; left: 160px; right: 160px; top: 0; bottom: 150px; display: flex; flex-direction: column; justify-content: center; }
+    .wrap.mid { align-items: center; text-align: center; }
+    .points { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 56px; }
+    .point { padding: 36px 36px 40px; border: 1px solid var(--line); border-radius: 20px; background: #fff; box-shadow: 0 18px 48px rgba(16,24,40,.06); }
+    .point b { display: block; font-size: 20px; font-weight: 600; color: color-mix(in srgb, var(--accent) 80%, var(--fg)); letter-spacing: .12em; }
+    .point h3 { margin: 14px 0 0; font-size: 38px; font-weight: 700; }
+    /* 每个场景/章节左上角都有一份，data-carry 让它在交界处飞过去，不是整屏换掉（docs/lessons.md §3.4） */
+    .brand { position: absolute; left: 160px; top: 96px; font-size: 26px; font-weight: 700; letter-spacing: .08em; color: var(--accent); }
+    .point p { margin: 12px 0 0; font-size: 26px; line-height: 1.5; color: var(--muted); }
+  </style>
+</head>
+<body>
+<script type="module">
+  import { createVideo, fx } from '../../engine/index.js';
+
+  // 场景模式（翻页式）：场景之间用转场衔接。背景和进度轴是全局层，全程不停，
+  // 所以场景本身保持透明（不要给 .scene 加不透明背景，否则会盖住背景层）。
+  // 规则：本场景内容在转场窗口里淡出（leave），下一场景的内容在转场一开始就入场——两者交叉，没有空帧。
+  // 淡出必须恰好落在 [dur-T, dur]，不要提前：提前结束会留下空档，audit 会报「空帧」。
+  // 卡片等次要元素可以先退场，但标题所在的 .wrap 要一直撑到转场。
+  const T = 0.6; // 转场时长，与下面 transition.dur 一致
+  const leave = (tl, el, dur) => tl.to(el.querySelector('.wrap'), { opacity: 0, y: -16 }, { at: dur - T, dur: T, ease: 'inOutQuad' });
+
+  // rhythm：anchor = 节拍点；dense = 信息密集；breathing = 留白（≤ 全片 30%，不能连着）。
+  // 光标主线：在 build 里调 ctx.cursor([{ to: el, click: true }, …])，全片共用一个光标（模板 tutorial 有完整示例）。
+  await createVideo({
+    width: 1920, height: 1080, fps: 30,
+    look: 'light',
+    theme: { accent: '#1a73e8' },
+    background: 'network',
+    progress: true,
+    scenes: [
+      {
+        id: 'intro', title: '开场', dur: 4.5, rhythm: 'anchor',
+        html: `
+          <div class="wrap mid">
+            <span class="kicker">NEW</span>
+            <h1 class="h1">__TITLE__</h1>
+            <p class="lede">一句话说清楚它是什么</p>
+          </div>
+          <span class="brand" data-carry="brand">__TITLE__</span>`,
+        build(tl, el, ctx) {
+          tl.from(el.querySelector('.kicker'), { opacity: 0, y: 16 }, { at: 0.2, dur: 0.7, ease: 'outCubic' });
+          fx.textIn(tl, el.querySelector('.h1'), { at: 0.35, preset: 'line', sfx: 'rise' });
+          fx.textIn(tl, el.querySelector('.lede'), { at: 0.75, preset: 'line' });
+          leave(tl, el, ctx.dur);
+        },
+      },
+      {
+        id: 'points', title: '要点', dur: 6, rhythm: 'dense', transition: { type: 'fade', dur: T },
+        html: `
+          <div class="wrap">
+            <h2 class="h2">三件事</h2>
+            <p class="sub">每条一句话，不要写成段落</p>
+            <div class="points">
+              <div class="point"><b>01</b><h3>要点一</h3><p>补充说明一行</p></div>
+              <div class="point"><b>02</b><h3>要点二</h3><p>补充说明一行</p></div>
+              <div class="point"><b>03</b><h3>要点三</h3><p>补充说明一行</p></div>
+            </div>
+          </div>
+          <span class="brand" data-carry="brand">__TITLE__</span>`,
+        build(tl, el, ctx) {
+          fx.textIn(tl, el.querySelector('.h2'), { at: 0.05, preset: 'line' });
+          fx.textIn(tl, el.querySelector('.sub'), { at: 0.3, preset: 'fade' });
+          fx.staggerIn(tl, el.querySelectorAll('.point'), { at: 0.5, stagger: 0.25, dur: 0.8, from: { y: 36, opacity: 0 }, sfx: 'blip' });
+          tl.caption('字幕文本', 1.6, 3);
+          leave(tl, el, ctx.dur);
+        },
+      },
+      {
+        id: 'outro', title: '结尾', dur: 4.5, rhythm: 'anchor', transition: { type: 'fade', dur: T },
+        html: `
+          <div class="wrap mid">
+            <h2 class="h2">谢谢观看</h2>
+            <p class="lede">一行行动号召</p>
+            <p class="sub">example.com</p>
+          </div>
+          <span class="brand" data-carry="brand">__TITLE__</span>`,
+        build(tl, el) {
+          fx.textIn(tl, el.querySelector('.h2'), { at: 0.05, preset: 'line' });
+          fx.textIn(tl, el.querySelector('.lede'), { at: 0.35, preset: 'line' });
+          fx.textIn(tl, el.querySelector('.sub'), { at: 0.6, preset: 'fade' });
+        },
+      },
+    ],
+  });
+</script>
+</body>
+</html>

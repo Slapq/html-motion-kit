@@ -23,7 +23,9 @@
 
 ```bash
 npm install
-npm run new -- my-video --title "我的项目"        # 生成 projects/my-video
+npm run new -- my-video --title "我的项目"        # 生成 projects/my-video（连续模式）
+npm run new -- my-deck --title "我的项目" --mode scenes   # 翻页模式
+npm run new -- my-howto --title "我的项目" --mode tutorial  # 教程：光标主线 + 交接
 npm run img -- --manifest projects/my-video/assets.json   # 生成图片素材
 npm run serve                                      # http://127.0.0.1:5173/projects/my-video/
 npm run render -- projects/my-video                # → projects/my-video/out.mp4
@@ -38,9 +40,62 @@ npm run render -- projects/my-video --still 3.5 --out f.png   # 单帧检查
 1. 读取目标项目（README、功能、命令、界面），写出分镜：每个场景的目的、时长、画面、字幕。
 2. 写 `assets.json`：背景、角色（`transparent: true`，全身正面、手臂自然下垂、脚贴底边）、表情变体（`edit` 基于角色图）。
 3. `npm run img -- --manifest …`：已存在的文件会跳过（`--force` 重新生成），每张图旁写入 `.prompt.json`。
-4. 在 `index.html` 中编写场景；用 `--still` 抽帧检查，再完整导出。
+4. 在 `index.html` 中编写场景；`npm run audit -- projects/<name>` 扫全片拿数字结论（裁切、出画、压叠、空帧、偏空 `--sparse 0.8`、静止 `--still 1.5`、镜头超速 `--max-px 80`），再抽 1~2 帧确认审美，最后完整导出。
+   写完前 2~3 段就先审一次（`--to <秒>`），别等全片写完再返工。输出分两级：**问题**是阻塞项（退出码 1，导出前必须为 0）；**提示**不阻塞（交接无延续、dense 段文字太少、颜色 >6 种、字号 >7 种），默认打印，`--no-hints` 关闭。
 
-## 场景
+开工前建议先扫一遍 [`docs/lessons.md`](docs/lessons.md)：那是踩过的失败清单（会静默失效的 API 语义、让画面变难看的视觉禁忌、绝对定位与全局 CSS 的坑）。
+
+## 连续模式（默认模板）
+
+章节横排在一条长画布上，镜头一路平移；背景和进度轴全程不停。没有转场，也就没有"翻页感"。
+
+```js
+await createVideo({
+  width: 1920, height: 1080, fps: 30,
+  look: 'light', theme: { accent: '#1a73e8' },   // 浅色 + 单一主色
+  background: 'network',                         // 或 'grid' / { type: 'network', count: 30 } / null
+  progress: true,                                // 底部进度轴，刻度来自章节 title
+  camera: { ease: 'inOutQuad', maxPx: 80 },      // 可选；移动时长按峰值速度自动算
+  chapters: [{
+    id: 'intro', title: '开场', dur: 5,
+    html: `<div class="wrap mid">…</div>`,
+    build(tl, el, ctx) { /* 局部 0 = 镜头开始驶向本章；ctx.arrive = 到位时间 */ },
+  }],
+});
+```
+
+- 引擎自动给每章 `left: k × width`、生成镜头关键帧（峰值 ≤ `maxPx`/帧，到位后保持 ~10px/s 漂移）。
+- 章节 `dur` 必须 ≥ 镜头移动时长 + 0.5s，否则直接报错。
+- 内容请在 `ctx.arrive` **之前**开始入场（例如 `at: 0.3`），镜头到位时画面已经有字。
+- `registerBackground(name, (tl, host, opts) => canvas)` 可扩展背景层。
+
+## 交接、光标与节奏（两种模式通用）
+
+每个交界至少让一样东西延续到下一段，否则就是翻页（`docs/lessons.md` §3.4）。
+
+```js
+// 相邻两段里放同名 data-carry：交界处原件隐藏，快照在屏幕空间从 A 的位置飞到 B 的位置
+html: `<span class="goal" data-carry="goal">目标：做出第一个结果</span> …`,
+
+build(tl, el, ctx) {
+  // 全片只有一个光标：任何一段调用都接在同一条路径上，跨交界时直接飞过去
+  ctx.cursor([
+    { to: el.querySelector('.input'), at: 0.6, dur: 0.8, click: true, press: true },
+    { to: [960, 540], at: 2.4 },       // 本段坐标
+    { hide: 5.2 },                     // 淡出；之后的下一次移动会淡入
+  ]);
+},
+rhythm: 'dense',                       // 'anchor' | 'dense' | 'breathing'
+```
+
+- carry 飞行时长 = max(转场/镜头时长, 按 `maxPx`/帧 限速)；内容不同时几何插值，中间 30% 交叉淡化，不透明度之和始终 ≥ 1。同一段里名字不能重复（直接报错）。
+- rhythm：`breathing` 合计 ≤ 全片 30%，且不能连着两段，违反是阻塞问题；breathing 段放宽「偏空」「静止」；`dense` 段平均文字块 <4 会给提示。
+- 构建后 `__video.timeline.carry` 里有 `flights` 和每个交界的 `boundaries`（审计据此出「交接」提示）。
+- `--mode tutorial` 模板是完整示例：目标标签跨章节飞行，光标点输入框 → 敲命令 → 结果出现。
+
+## 场景（翻页模式）
+
+`background` / `progress` / `look` 在场景模式下同样可用；有背景时场景自带 10px/s 漂移（`drift: 0` 关闭），`.scene` 不要加不透明底色。
 
 ```js
 await createVideo({
@@ -57,7 +112,8 @@ await createVideo({
 });
 ```
 
-转场：`cut fade zoom slide up wipe circle flip glitch`，和上一场景重叠 `dur` 秒（默认 0.8），并自动配音效。
+转场：`cut fade zoom slide up wipe circle flip glitch`，和上一场景重叠 `dur` 秒（默认 0.8），并自动配音效；未知类型直接报错。
+避免空帧：本场景内容在最后 `dur` 秒淡出，下一场景内容在转场一开始就入场（模板里的 `leave()` 就是这么写的）。
 CSS 组件（`engine/base.css`）：`.center .title .subtitle .grad-text .bg-image .bg-grad .card .bullets .code .window>.bar .step-num`。
 
 ## Timeline
@@ -69,20 +125,20 @@ CSS 组件（`engine/base.css`）：`.center .title .subtitle .grad-text .bg-ima
 - `at`：`2.5` 场景内绝对时间 · `'+0.3'` 上一项结束后 · `'-0.2'` 与上一项重叠 · `'<'` 与上一项同时开始 · `'<0.1'`
 - `tl.add((lt, t) => …)` 每帧回调 · `tl.modify(el, lt => deltas, { at, dur })`
 - `tl.sfx(name, at, { volume, dur })` · `tl.audio(src, at, opts)` · `tl.caption(text, at, dur)`
-- 缓动：`linear`，`in/out/inOut` + `Quad Cubic Quart Expo Back`，`outBounce` `outElastic`，或自定义函数
+- 缓动：`linear`，`in/out/inOut` + `Quad Sine Cubic`，`outQuart inOutQuart outExpo inOutExpo inBack outBack`，`outBounce` `outElastic` `spring`，或自定义函数；未知名字直接报错
 
 ## fx
 
 | 函数 | 用途 |
 |---|---|
-| `textIn(tl, el, { preset: rise/drop/blur/pop/flip/wave, by: char/word, stagger, sfx })` | 逐字入场，支持 `.grad-text` |
+| `textIn(tl, el, { preset, by: char/word, stagger, ease, sfx })` | 文字入场。`line`（整行上浮，大标题首选）`fade` `blur` 整行动；`rise drop pop flip wave` 逐字 |
 | `typewriter(tl, el, { cps })` | 打字效果，读取 `data-text` |
 | `counter(tl, el, { from, to, dur, decimals, format })` | 数字滚动 |
 | `staggerIn(tl, els, { from, stagger, sfx })` | 列表依次入场 |
 | `cursor(tl, stage, [{ to: [x,y] \| el, at, dur, click, press }])` | 教程光标与点击 |
 | `highlight(tl, stage, el, { at, dur })` | 聚焦框 |
 | `kenBurns` `parallax` `float` `shake` `drawPath` | 镜头与运动 |
-| `particles(tl, el, { mode: dust/bokeh/burst/confetti, count, colors, origin })` | 粒子 |
+| `particles(tl, el, { mode: dust/bokeh/burst/confetti/stars, count, colors, origin })` | 粒子（浅色底上慎用 bokeh） |
 
 音效（程序合成，无需素材）：`whoosh swoosh pop click tick type ding success error rise impact sparkle glitch blip`。可用 `registerSfx(name, (ctx, out, t, opts) => …)` 扩展。
 
@@ -218,7 +274,7 @@ TouchDesigner 适合做生成式背景、粒子和 GLSL 效果，但它不能被
 
 ## 作为 DSH 插件（DeepSeek Harness）
 
-本仓库同时是一个 DeepSeek Harness（DSH） 插件包。装进 DSH 后，Agent 获得一个 `html-motion-kit` skill 和四个工具，可以在对话里直接写视频、抽帧检查、导出 MP4。
+本仓库同时是一个 DeepSeek Harness（DSH） 插件包。装进 DSH 后，Agent 获得一个 `html-motion-kit` skill 和五个工具，可以在对话里直接写视频、审计画面、抽帧检查、导出 MP4。
 
 ```bash
 git clone https://github.com/Slapq/html-motion-kit && cd html-motion-kit && npm install
@@ -229,14 +285,16 @@ dsh web
 | 工具 | 作用 |
 |---|---|
 | `motion_info` | 根目录、README 路径、已有项目列表 |
-| `motion_new` | 创建 `projects/<name>`（三幕模板） |
+| `motion_new` | 创建 `projects/<name>`（`mode`: `continuous` 默认 / `scenes`，浅色模板，开箱审计 0 问题） |
+| `motion_audit` | 扫完整条时间轴，报阻塞问题（裁切 / 出画 / 压叠 / 空帧 / 偏空 / 静止 / 节奏违规 / 镜头超速）和不阻塞的提示（交接、字号、颜色） |
 | `motion_still` | 渲染时间 `t` 的单帧 PNG，可传 `props` |
 | `motion_render` | 导出 MP4，支持 `from / to / fps / workers / props` |
 
-- 工具直接调用 `tools/new-project.mjs` 和 `tools/render.mjs`，与命令行结果一致。
+- 工具直接调用 `tools/new-project.mjs`、`tools/audit.mjs` 和 `tools/render.mjs`，与命令行结果一致。
 - 项目名只允许字母、数字、`-`、`_`；输出文件必须在项目目录内，越界路径直接报错。
 - 配置（`dsh/cordis.patch.yml`）：`root`（默认本仓库）、`timeoutSec`（默认 1800）。
 - 依赖与命令行相同：Chrome / Edge、PATH 中的 `ffmpeg`。
+- Agent 写视频前会读到 `docs/lessons.md`（实战经验与坑），里面记录了容易静默失败的 API 语义和视觉禁忌。
 
 ## 导出参数
 
