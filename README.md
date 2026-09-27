@@ -276,16 +276,25 @@ TouchDesigner 适合做生成式背景、粒子和 GLSL 效果，但它不能被
 
 本仓库同时是一个 DeepSeek Harness（DSH） 插件包。装进 DSH 后，Agent 获得一个 `html-motion-kit` skill 和五个工具，可以在对话里直接写视频、审计画面、抽帧检查、导出 MP4。
 
+直接从 GitHub 安装（DSH 会自动把它加入 profile 的 `bundles`）：
+
+```bash
+dsh plugin --profile web add github:Slapq/html-motion-kit#v0.4.1   # 去掉 #v0.4.1 跟随 main
+dsh web
+```
+
+这种方式下项目默认建在安装目录 `~/.dsh/profiles/<profile>/node_modules/html-motion-kit/projects/` 里，重装或升级插件可能清掉；长期使用建议把配置 `root` 指向自己的目录，或用本地链接安装：
+
 ```bash
 git clone https://github.com/Slapq/html-motion-kit && cd html-motion-kit && npm install
-dsh plugin --profile web add link:$(pwd)     # 或换成你的 profile 名
+dsh plugin --profile web add link:$(pwd)     # 改代码立即生效，适合开发
 dsh web
 ```
 
 | 工具 | 作用 |
 |---|---|
 | `motion_info` | 根目录、README 路径、已有项目列表 |
-| `motion_new` | 创建 `projects/<name>`（`mode`: `continuous` 默认 / `scenes`，浅色模板，开箱审计 0 问题） |
+| `motion_new` | 创建 `projects/<name>`（`mode`: `continuous` 默认 / `scenes` / `tutorial`，浅色模板，开箱审计 0 问题） |
 | `motion_audit` | 扫完整条时间轴，报阻塞问题（裁切 / 出画 / 压叠 / 空帧 / 偏空 / 静止 / 节奏违规 / 镜头超速）和不阻塞的提示（交接、字号、颜色） |
 | `motion_still` | 渲染时间 `t` 的单帧 PNG，可传 `props` |
 | `motion_render` | 导出 MP4，支持 `from / to / fps / workers / props` |
