@@ -26,14 +26,14 @@ npm install
 npm run new -- my-video --title "我的项目"        # 生成 projects/my-video（连续模式）
 npm run new -- my-deck --title "我的项目" --mode scenes   # 翻页模式
 npm run new -- my-howto --title "我的项目" --mode tutorial  # 教程：光标主线 + 交接
-npm run img -- --manifest projects/my-video/assets.json   # 生成图片素材
 npm run serve                                      # http://127.0.0.1:5173/projects/my-video/
 npm run render -- projects/my-video                # → projects/my-video/out.mp4
 npm run render -- projects/my-video --still 3.5 --out f.png   # 单帧检查
 ```
 
-依赖：Node 18+、Chrome 或 Edge（或 `CHROME_PATH`）、PATH 中的 `ffmpeg`。
-图片接口：`OPENAI_API_KEY`、`OPENAI_BASE_URL`（中转网关，默认官方）、`IMAGE_MODEL`（默认 `gpt-image-2.5-sunburst`）。密钥只从环境变量读取。
+依赖：Node 20+、Chrome 或 Edge（或 `CHROME_PATH`）、PATH 中的 `ffmpeg`。
+
+可选：运行 `npm run img -- --manifest projects/my-video/assets.json` 生成图片素材。新建模板无需生成图片即可预览；使用图片接口时需设置 `OPENAI_API_KEY`，可用 `OPENAI_BASE_URL` 指定中转网关（默认官方），用 `IMAGE_MODEL` 指定模型（默认 `gpt-image-2.5-sunburst`）。密钥只从环境变量读取。
 
 ## Agent 工作流
 
@@ -150,10 +150,9 @@ const p = new MeshPuppet({ src: 'assets/mascot.png', width: 520, height: 780, he
 el.appendChild(p.el);
 tl.add((lt) => p.update(lt));
 p.emote('bounce', 1.3).emote('nod', 3, 0.9).emote('tilt', 5).emote('shake', 6);
-p.talk(2, 4);   // 需要张嘴素材（LayeredPuppet）
 ```
 
-`MeshPuppet` 对单张透明 PNG 做三角网格变形，实现呼吸、摆动、头部转动和头发滞后。`LayeredPuppet({ width, height, parts: [{ src, x, y, w, h, pivot, z, … }] })` 用分层部件做眨眼、说话和视差，部件的 `role` 可取 head/eyes/eyesClosed/mouth/mouthOpen 等，用 `gen-image --edit` 从基础角色图派生。
+`MeshPuppet` 对单张透明 PNG 做三角网格变形，实现呼吸、摆动、头部转动和头发滞后。要显示张嘴说话，使用带嘴部素材的 `LayeredPuppet`，再调用 `p.talk(2, 4)`。`LayeredPuppet({ width, height, parts: [{ src, x, y, w, h, pivot, z, … }] })` 用分层部件做眨眼、说话和视差，部件的 `role` 可取 head/eyes/eyesClosed/mouth/mouthOpen 等，用 `npm run img -- --edit … --prompt "…" --out …` 从基础角色图派生。
 
 ## 三维（Space3D）
 
@@ -307,7 +306,7 @@ dsh web
 
 ## 导出参数
 
-`--out --fps --from --to --scale --crf --mute --chrome --still --props --workers`。页面带 `?export` 时会隐藏控制条，音频离线渲染后与画面合流。
+`--out --fps --from --to --scale --crf --mute --chrome --still --props --workers --inspect`。`--inspect trace.json` 会导出 `tl.inspect()` 轨迹。页面带 `?export` 时会隐藏控制条，音频离线渲染后与画面合流。
 
 ## 许可
 
