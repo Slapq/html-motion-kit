@@ -101,7 +101,7 @@ build(tl, el, ctx) {
 - **GPU 着色器**：`new ShaderLayer(el, { frag, uniforms }).bind(tl)`，uniform 可补间，也可作为节点 `target: '@sh.uniforms'`。
 - **Canvas 伪 3D**：`new Space3D(el, { fov, fog })`，几何 `points polyline plane quad grid lattice sphere ring cloud box`，对象和相机都可补间，`Space3D.along(pts, f)` 取路径点。
 - **字符 3D**：`AsciiSpace`，把几何体渲染成字符阵列（`kinema-promo`）。
-- **角色**：`MeshPuppet({ src, width, height, headLine })` 对单张透明 PNG / SVG 做网格变形（呼吸、摆动、转头、头发滞后），`emote('bounce' | 'nod' | 'tilt' | 'shake', at)`；`LayeredPuppet` 用分层部件做眨眼和说话。
+- **角色**：`MeshPuppet({ src, width, height, headLine })` 对单张透明 PNG / SVG 做网格变形（呼吸、摆动、转头、头发滞后），`emote('bounce' | 'nod' | 'tilt' | 'shake', at)`；`LayeredPuppet` 用分层部件做眨眼和说话，张嘴用 `p.talk(start, end)`（需要嘴部素材，`MeshPuppet` 不支持）。
 
 canvas 层默认 `z-index: 0` 并且是 `appendChild`，会盖住文字，正文要显式设 `z-index`。
 
@@ -155,7 +155,7 @@ TouchDesigner 不能被浏览器逐帧驱动，所以走预渲染：
 
 ## 命令行参数
 
-`render`：`--out --fps --from --to --scale --crf --mute --chrome --still --props --workers`。`--out` 相对当前目录。页面带 `?export` 时隐藏控制条。
+`render`：`--out --fps --from --to --scale --crf --mute --chrome --still --props --workers --inspect`。`--out` 相对当前目录，`--inspect trace.json` 导出 `tl.inspect()` 轨迹。页面带 `?export` 时隐藏控制条。
 
 `audit`：`--to <秒>` 只扫前一段，`--step`，`--no-hints` 关闭风格读数。
 
