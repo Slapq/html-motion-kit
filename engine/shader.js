@@ -59,7 +59,7 @@ function typeOf(v) {
   if (Array.isArray(v) && v.length >= 2 && v.length <= 4) return `vec${v.length}`;
   throw new Error(`ShaderLayer: unsupported uniform value ${JSON.stringify(v)}`);
 }
-function link(gl, vs, fs) {
+export function link(gl, vs, fs) {
   const sh = (type, src) => {
     const s = gl.createShader(type);
     gl.shaderSource(s, src); gl.compileShader(s);

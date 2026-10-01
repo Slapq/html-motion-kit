@@ -1,4 +1,4 @@
-// Carry: something survives every boundary (docs/lessons.md §3.4).
+// Carry: something survives every boundary.
 //
 //   <h2 data-carry="title">…</h2>  in scene/chapter A and again in the next one
 //

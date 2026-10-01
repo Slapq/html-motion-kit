@@ -1,0 +1,38 @@
+{
+  "defaults": { "model": "gpt-image-2.5", "size": "1536x1024", "quality": "high", "transparent": true },
+  "images": [
+    {
+      "out": "assets/chan-hero.png",
+      "size": "1024x1536",
+      "edit": ["assets/ref-whale.png"],
+      "prompt": "Redraw this exact chibi anime character in a clean high-resolution illustration: a chibi girl with very long wavy blue gradient hair (deep navy at the roots fading to light sky blue at the tips), two large whale-fin shaped ears on the sides of her head (dark blue with pale edges), a white frilled maid headdress with a blue ribbon bow and a small blue jewel, a navy-blue and white maid dress with a tiny whale emblem on the chest, big round blue eyes, soft cel shading, clean anime line art. Pose: full body, standing, facing the viewer, one hand raised in a friendly wave, warm happy smile, feet visible. Fully transparent background, no scenery, no text, no letters, no watermark, generous empty margin around the character."
+    },
+    {
+      "out": "assets/chan-tired.png",
+      "size": "1024x1536",
+      "edit": ["assets/ref-whale.png"],
+      "prompt": "Redraw this exact chibi anime character in a clean high-resolution illustration: chibi girl, very long wavy blue gradient hair (deep navy roots fading to light sky blue tips), two large whale-fin shaped ears on the sides of her head, white frilled maid headdress with a blue bow, navy and white maid dress with a tiny whale emblem on the chest, soft cel shading, clean anime line art. Pose: completely exhausted, slumped forward with shoulders drooping, head hanging down, half-closed dead-tired eyes, small blush on the cheeks, a couple of tiny sweat drops, one arm dangling limply. Fully transparent background, no table, no glass, no scenery, no text, no letters, no watermark, generous empty margin."
+    },
+    {
+      "out": "assets/chan-point.png",
+      "size": "1024x1536",
+      "edit": ["assets/ref-whale.png"],
+      "prompt": "Redraw this exact chibi anime character in a clean high-resolution illustration: chibi girl, very long wavy blue gradient hair (deep navy roots fading to light sky blue tips), two large whale-fin shaped ears on the sides of her head, white frilled maid headdress with a blue bow, navy and white maid dress with a tiny whale emblem on the chest, big round blue eyes, soft cel shading, clean anime line art. Pose: full body, standing in a three-quarter view turned slightly to her left, right arm extended and raised pointing up and to the upper right with an open confident smile, left hand resting on her hip, chin up, energetic teaching pose, feet visible. Fully transparent background, no scenery, no pointing stick, no text, no letters, no watermark, generous empty margin around the character."
+    },
+    {
+      "out": "assets/chan-like.png",
+      "size": "1024x1536",
+      "edit": ["assets/ref-whale.png"],
+      "prompt": "Redraw this exact chibi anime character in a clean high-resolution illustration: chibi girl, very long wavy blue gradient hair (deep navy roots fading to light sky blue tips), two large whale-fin shaped ears on the sides of her head, white frilled maid headdress with a blue bow and a small blue jewel, navy and white maid dress with a tiny whale emblem on the chest, big round blue eyes, soft cel shading, clean anime line art. Pose: full body, standing, facing the viewer, both hands raised in front of her chest forming a small heart shape with her fingers, eyes curved into happy crescents, a wide cheerful open-mouth smile, a warm blush on both cheeks, feet visible. Fully transparent background, no scenery, no heart symbol floating, no text, no letters, no watermark, generous empty margin around the character."
+    },
+    {
+      "out": "assets/chan-avatar.png",
+      "size": "1024x1024",
+      "edit": ["assets/ref-whale.png"],
+      "prompt": "Head and shoulders portrait of this exact chibi anime character, centered and filling most of the frame: chibi girl, very long wavy blue gradient hair (deep navy roots fading to light sky blue tips), two large whale-fin shaped ears on the sides of her head, white frilled maid headdress with a blue ribbon bow, big round blue eyes, a small cheerful smile, soft cel shading, clean anime line art, crisp edges. Fully transparent background, no text, no letters, no watermark."
+    }
+  ],
+  "notes": {
+    "audio": "assets/bgm.mp3 = Podington Bear - Now Son (Free Music Archive)；assets/sfx-click.mp3 = Mixkit。片中只有这两样声音：一条 BGM + 一个点击音，没有用引擎的程序化音效（whoosh / pop / ding / 掌声都已去掉）。"
+  }
+}

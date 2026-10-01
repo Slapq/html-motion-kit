@@ -1,7 +1,7 @@
 {
-  "name": "html-motion-kit",
-  "version": "0.4.1",
-  "description": "Frame-exact HTML/JS motion graphics & video framework with a TouchDesigner/Cavalry-style data graph; usable as a DeepSeek Harness (DSH) plugin",
+  "name": "kinema",
+  "version": "0.5.0",
+  "description": "Agent-native video creator: frame-exact HTML/JS motion graphics rendered to MP4",
   "license": "MIT",
   "private": true,
   "type": "module",
@@ -12,14 +12,13 @@
     "./package.json": "./package.json"
   },
   "keywords": [
-    "dsh",
-    "dsh-plugin",
-    "deepseek",
-    "harness",
-    "motion-graphics",
     "video",
-    "touchdesigner",
-    "cavalry"
+    "motion-graphics",
+    "agent",
+    "animation",
+    "mp4",
+    "dsh",
+    "dsh-plugin"
   ],
   "engines": {
     "node": ">=20.0.0"
@@ -28,6 +27,7 @@
     "dsh",
     "engine",
     "docs/lessons.md",
+    "docs/reference.md",
     "tools",
     "projects/demo",
     "projects/graph-showcase",
@@ -44,6 +44,7 @@
     "img": "node tools/gen-image.mjs",
     "render": "node tools/render.mjs",
     "audit": "node tools/audit.mjs",
+    "pacing": "node tools/pacing.mjs",
     "new": "node tools/new-project.mjs",
     "test": "node --test tests/*.test.mjs"
   },

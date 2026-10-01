@@ -18,7 +18,7 @@ test('apply registers skill and tools once, disposers unregister', () => {
   const ctx = mockCtx();
   plugin.apply(ctx, {});
   plugin.apply(ctx, {});
-  assert.deepEqual(ctx.tools.map((t) => t.name), ['motion_info', 'motion_new', 'motion_audit', 'motion_still', 'motion_render']);
+  assert.deepEqual(ctx.tools.map((t) => t.name), ['motion_info', 'motion_new', 'motion_audit', 'motion_pacing', 'motion_still', 'motion_render']);
   assert.equal(ctx.skills.length, 1);
   // DSH validateDefinition requires string name/description/source/content.
   for (const k of ['name', 'description', 'source', 'content']) assert.equal(typeof ctx.skills[0][k], 'string', k);
@@ -29,7 +29,7 @@ test('apply registers skill and tools once, disposers unregister', () => {
 });
 
 test('rejects a root that is not the kit', () => {
-  assert.throws(() => plugin.resolveConfig({ root: '/' }), /不是 HTML Motion Kit/);
+  assert.throws(() => plugin.resolveConfig({ root: '/' }), /不是 Kinema/);
 });
 
 const tools = Object.fromEntries(plugin.makeTools(plugin.resolveConfig()).map((t) => [t.name, t]));
@@ -53,6 +53,10 @@ test('path and argument validation', async () => {
   assert.equal((await tools.motion_new.execute({ name: 'zz-never', mode: 'slides' })).ok, false);
   assert.equal((await tools.motion_audit.execute({ project: 'no-such-project' })).ok, false);
   assert.equal((await tools.motion_audit.execute({ project: 'demo', step: -1 })).ok, false);
+  assert.equal((await tools.motion_pacing.execute({ project: 'no-such-project' })).ok, false);
+  assert.equal((await tools.motion_pacing.execute({ project: 'demo', limit: 0 })).ok, false);
+  assert.equal((await tools.motion_pacing.execute({ project: 'demo', endHold: -1 })).ok, false);
+  assert.equal((await tools.motion_pacing.execute({ project: 'demo', step: -1 })).ok, false);
 });
 
 test('motion_still renders a PNG with props', { timeout: 120000 }, async () => {

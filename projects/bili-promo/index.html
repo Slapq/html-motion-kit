@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>给你的插件一支介绍片 · HTML Motion Kit</title>
+  <link rel="stylesheet" href="../../engine/base.css">
+  <style>
+    /* 全片一份全局 CSS：通用件用 bi- 前缀，章节专属件用 b1- … b7- 前缀（docs/lessons.md §2.5） */
+    :root {
+      --bi-pink: #fb7299;          /* B 站粉：只用于填充、进度轴、图标 */
+      --bi-pink-ink: #c2185b;      /* 粉色文字（浅底上 4.9:1） */
+      --bi-pink-soft: #ffe6ee;
+      --bi-blue: #23ade5;
+      --bi-follow: #e0407a;        /* 白字底（4.0:1，20px 粗体达标） */
+      --bi-ok: #1a7f4b;
+    }
+    /* 版心：去掉弹幕带后整体上移一点，重心回到画面中部 */
+    .bi-wrap { position: absolute; left: 160px; right: 160px; top: 258px; bottom: 172px; display: flex; flex-direction: column; justify-content: center; }
+    .bi-wrap.mid { align-items: center; text-align: center; }
+    .bi-wrap.pad { padding-right: 430px; }
+    .bi-wrap.pad2 { padding-right: 390px; }
+    .bi-wrap.pad3 { padding-right: 470px; }
+
+    /* 字号只留 5 级：104 / 60 / 34 / 26 / 20；中文大字的自然行高约 1.25em，
+       写死 1.2 会让墨迹超出盒子被审计判「裁切」，所以大标题用 normal（docs/lessons.md §2.5） */
+    .bi-t1 { margin: 26px 0 0; font-size: 104px; line-height: normal; font-weight: 800; letter-spacing: -2px; }
+    .bi-t2 { margin: 0; font-size: 60px; line-height: normal; font-weight: 800; letter-spacing: -1.2px; }
+    .bi-sub { margin: 22px 0 0; font-size: 26px; color: var(--muted); }
+    .grad-text { background: linear-gradient(92deg, var(--bi-pink) 8%, var(--bi-blue) 92%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+    /* 章节角标：每章一个，data-carry 让它在交界处飞过去（不是整屏换掉） */
+    .bi-chip { position: absolute; left: 160px; top: 168px; display: inline-flex; align-items: center; height: 50px; padding: 0 24px;
+      border-radius: 999px; background: var(--bi-pink-soft); color: var(--bi-pink-ink); font-size: 20px; font-weight: 700; letter-spacing: .06em; }
+
+    /* 常驻 HUD：UP 主条 + 生成署名（屏幕固定，不随镜头移动） */
+    .bi-up { position: absolute; left: 160px; bottom: 104px; display: flex; align-items: center; gap: 16px; }
+    .bi-up img { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; object-position: 50% 34%; border: 2px solid #fff; box-shadow: 0 8px 20px rgba(16, 24, 40, .16); }
+    .bi-up .bi-name { font-size: 20px; font-weight: 700; color: #1f2733; }
+    .bi-up .bi-follow { font-size: 20px; font-weight: 700; color: #fff; background: var(--bi-follow); border-radius: 999px; padding: 8px 22px; }
+    .bi-credit { position: absolute; right: 160px; bottom: 104px; font-size: 20px; color: var(--muted); }
+
+    /* 角色：只做有目的的入场 + 极缓呼吸，不抖不漂（docs/lessons.md §3.2） */
+    .bi-chan { position: absolute; will-change: transform; }
+    .b1-chan { right: 140px; top: 316px; height: 560px; }
+    .b2-chan { right: 168px; bottom: 208px; height: 430px; }
+    .b3-chan { right: 118px; top: 296px; height: 600px; }
+    .b7-chan { right: 120px; bottom: 196px; height: 520px; }
+
+    /* —— 01 开场 —— */
+    .b1-kicker { display: inline-block; padding: 10px 22px; border-radius: 999px; background: var(--bi-pink-soft); color: var(--bi-pink-ink);
+      font-size: 20px; font-weight: 700; letter-spacing: .16em; }
+    .b1-lede { margin: 28px 0 0; font-size: 34px; line-height: 1.45; color: var(--muted); }
+    .b1-mini { display: flex; gap: 16px; margin-top: 38px; }
+    .b1-mini span { padding: 10px 22px; border-radius: 12px; background: #fff; border: 1px solid var(--line); color: #1f2733;
+      font-size: 20px; font-weight: 600; box-shadow: 0 10px 26px rgba(16, 24, 40, .05); }
+    .b1-boot { align-self: center; margin-top: 30px; padding: 10px 24px; border-radius: 12px; background: var(--bi-pink-soft);
+      color: var(--bi-pink-ink); font-size: 26px; font-weight: 700; }
+
+    /* —— 02 痛点 —— */
+    .b2-list { display: flex; flex-direction: column; gap: 18px; margin-top: 34px; }
+    .b2-row { display: flex; align-items: center; gap: 18px; padding: 16px 24px; background: #fff; border: 1px solid var(--line);
+      border-left: 5px solid var(--bi-pink); border-radius: 14px; box-shadow: 0 12px 30px rgba(16, 24, 40, .05); }
+    .b2-row b { font-family: var(--mono); font-size: 20px; color: var(--bi-pink-ink); background: var(--bi-pink-soft); width: 34px; height: 34px; flex: none;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .b2-row span { font-size: 26px; color: #1f2733; }
+    .b2-note { margin: 32px 0 0; font-size: 26px; color: var(--muted); }
+    /* inline 元素不吃 transform，强调词要 inline-block 才能做缩放一拍 */
+    .b2-note em { display: inline-block; font-style: normal; font-weight: 700; color: var(--bi-pink-ink); }
+
+    /* —— 03 视频就是代码 —— */
+    .b3-card { margin-top: 32px; padding: 28px 38px 32px; background: #fff; border: 1px solid var(--line); border-radius: 20px;
+      box-shadow: 0 18px 44px rgba(16, 24, 40, .07); }
+    .b3-eq { display: block; font-family: var(--mono); font-size: 34px; font-weight: 700; color: var(--bi-pink-ink); white-space: pre; }
+    .b3-cap { display: block; margin-top: 16px; font-size: 26px; color: var(--muted); }
+    .b3-chips { display: flex; gap: 16px; margin-top: 30px; }
+    .b3-chips span { padding: 10px 22px; border-radius: 12px; background: var(--bi-pink-soft); color: var(--bi-pink-ink); font-size: 20px; font-weight: 600; }
+    .b3-note2 { margin: 26px 0 0; font-size: 26px; color: var(--muted); }
+    .b3-note2 em { font-style: normal; font-weight: 700; color: var(--bi-pink-ink); }
+
+    /* —— 04 开箱就好看 —— */
+    .b4-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 32px; }
+    .b4-card { padding: 22px 26px 24px; background: #fff; border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 14px 34px rgba(16, 24, 40, .06); }
+    .b4-vis { height: 56px; border-radius: 10px; }
+    .b4-vis.v1 { background: linear-gradient(90deg, var(--bi-pink), var(--bi-blue)); }
+    .b4-vis.v2 { background-image: radial-gradient(circle, color-mix(in srgb, var(--bi-pink) 55%, transparent) 28%, transparent 30%);
+      background-size: 18px 18px; background-color: var(--bi-pink-soft); }
+    .b4-vis.v3 { background-image: repeating-linear-gradient(45deg, color-mix(in srgb, var(--bi-blue) 34%, transparent) 0 6px, transparent 6px 14px);
+      background-color: #eef7fc; }
+    .b4-vis.v4 { background-image: repeating-linear-gradient(90deg, color-mix(in srgb, var(--bi-pink) 46%, transparent) 0 4px, transparent 4px 12px);
+      background-color: #fff2f6; }
+    .b4-card b { display: block; margin-top: 16px; font-size: 26px; font-weight: 700; color: var(--bi-pink-ink); }
+    .b4-card span { display: block; margin-top: 8px; font-size: 20px; color: var(--muted); }
+
+    /* —— 05 超高扩展 —— */
+    .b5-tools { display: flex; flex-direction: column; gap: 14px; margin-top: 30px; }
+    .b5-tool { display: flex; align-items: baseline; gap: 22px; padding: 13px 26px; background: #fff; border: 1px solid var(--line);
+      border-radius: 14px; box-shadow: 0 12px 30px rgba(16, 24, 40, .05); }
+    .b5-tool b { flex: none; width: 340px; font-family: var(--mono); font-size: 26px; font-weight: 700; color: var(--bi-pink-ink); }
+    .b5-tool span { font-size: 26px; color: var(--fg); }
+    .b5-note { margin: 26px 0 0; font-size: 26px; color: var(--muted); }
+    .b5-note em { font-style: normal; font-weight: 700; color: var(--bi-pink-ink); }
+
+    /* —— 06 给插件出一支片 —— */
+    .b6-flow { display: flex; flex-direction: column; gap: 14px; margin-top: 30px; }
+    .b6-step { display: flex; align-items: baseline; gap: 20px; padding: 12px 26px; border-radius: 14px; background: #fff;
+      border: 1px solid var(--line); box-shadow: 0 12px 30px rgba(16, 24, 40, .05); }
+    .b6-step i { font-style: normal; flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--bi-pink-soft);
+      color: var(--bi-pink-ink); font-family: var(--mono); font-size: 20px; display: flex; align-items: center; justify-content: center; }
+    .b6-step span { font-size: 26px; color: var(--fg); }
+    .b6-step span em { font-style: normal; font-family: var(--mono); color: var(--bi-pink-ink); }
+    .b6-verdict { align-self: flex-start; margin-top: 26px; padding: 12px 24px; border-radius: 12px; background: #e8f7ee;
+      color: var(--bi-ok); font-size: 26px; font-weight: 700; }
+
+    /* —— 07 收工 —— */
+    .b7-trio { display: flex; gap: 54px; margin-top: 38px; }
+    .b7-tok { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+    .b7-tok svg { width: 76px; height: 76px; padding: 16px; border-radius: 50%; background: var(--bi-pink-soft); box-sizing: content-box; }
+    .b7-tok span { font-size: 20px; font-weight: 700; color: var(--bi-pink-ink); }
+    .b7-links { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-top: 32px; }
+    .b7-links span { font-family: var(--mono); font-size: 26px; }
+    .b7-cmd { color: var(--bi-pink-ink); font-weight: 700; }
+    .b7-url { color: var(--muted); }
+    .b7-credit { margin: 22px 0 0; font-size: 20px; color: var(--muted); }
+  </style>
+</head>
+<body>
+<script type="module">
+  import { createVideo, fx, registerBackground } from '../../engine/index.js';
+
+  // 自定义背景：几团大色斑各自缓慢做轨道运动 + 静态点阵纹理。
+  // 关键点：**不做任何方向性平移**（旧的 network 背景里那排竖线在 9px/s 往左滚），
+  // 所以画面"活着"但不"往左飘"；镜头 drift 也关掉了，靠这层承担持续变化。
+  // 内部按 1/3 分辨率画再放大，柔和又便宜。
+  registerBackground('aurora', (tl, host, { width, height }) => {
+    const cv = document.createElement('canvas');
+    const k = 3;
+    cv.width = Math.round(width / k); cv.height = Math.round(height / k);
+    cv.className = 'bg-layer bg-aurora';
+    Object.assign(cv.style, { width: width + 'px', height: height + 'px' });
+    host.appendChild(cv);
+    const g = cv.getContext('2d');
+    const TAU = Math.PI * 2, W = cv.width, H = cv.height;
+    const blobs = [
+      { x: 0.20, y: 0.22, r: 0.34, c: '251,114,153', a: 0.13, ax: 44, ay: 30, wx: 0.23, wy: 0.19, ph: 0.0 },
+      { x: 0.82, y: 0.26, r: 0.30, c: '35,173,229', a: 0.11, ax: 37, ay: 35, wx: 0.19, wy: 0.24, ph: 1.7 },
+      { x: 0.58, y: 0.88, r: 0.38, c: '251,114,153', a: 0.11, ax: 40, ay: 27, wx: 0.17, wy: 0.21, ph: 3.1 },
+      { x: 0.10, y: 0.82, r: 0.27, c: '35,173,229', a: 0.10, ax: 32, ay: 32, wx: 0.21, wy: 0.17, ph: 4.4 },
+    ].map((b) => ({ ...b, X: b.x * W, Y: b.y * H, R: b.r * W }));
+    tl.add((lt, t) => {
+      g.clearRect(0, 0, W, H);
+      for (const b of blobs) {
+        const x = b.X + Math.sin(t * b.wx + b.ph) * b.ax;
+        const y = b.Y + Math.cos(t * b.wy + b.ph) * b.ay;
+        const r = b.R * (1 + 0.08 * Math.sin(t * 0.21 + b.ph));
+        const grd = g.createRadialGradient(x, y, 0, x, y, r);
+        grd.addColorStop(0, `rgba(${b.c},${b.a})`);
+        grd.addColorStop(0.62, `rgba(${b.c},${(b.a * 0.34).toFixed(3)})`);
+        grd.addColorStop(1, `rgba(${b.c},0)`);
+        g.fillStyle = grd;
+        g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+      }
+      g.fillStyle = 'rgba(31,39,51,0.10)';
+      for (let x = 28; x < W; x += 31) for (let y = 24; y < H - 10; y += 29) { g.beginPath(); g.arc(x, y, 1.6, 0, TAU); g.fill(); }
+    }, { at: 0, label: 'background:aurora' });
+    return cv;
+  });
+
+  // 节奏（两条一起满足）：
+  //  1) 留白够读 —— 密集列表 0.38~0.55s 一行，整屏停 2~3s 让人看完；慢的入场 0.5~0.9s。
+  //  2) 章末不空等 —— 每章最后一拍落在章末前 ≤0.5s，演完就切镜。
+  // 镜头缓动用峰值斜率更低的 inOutSine，1.3s 走完一屏（峰值 76px/帧，仍在 80 以内）。
+  // 声音只有两样：一条 BGM + 一个点击音（都是下载来的素材）。
+  //
+  // 注意：fx.textIn 会用 splitText 重写 innerHTML，带 <em> 的段落不能走它（会被吞），
+  // 那几句改用普通 tween 保住宿主标记（docs/lessons.md §1）。
+  await createVideo({
+    width: 1920, height: 1080, fps: 30,
+    look: 'light',
+    theme: { accent: '#fb7299', accent2: '#23ade5' },
+    background: 'aurora',
+    progress: true,
+    // 镜头：到站即停（drift: 0）——不要那种"画面元素一直往左飘"的漂移感。
+    // 缓动用峰值斜率更低的 inOutSine，1.3s 走完一屏（峰值 76px/帧，仍在 80 以内）。
+    camera: { ease: 'inOutSine', drift: 0 },
+    music: { src: 'assets/bgm.mp3', volume: 0.26, fadeIn: 1.0, fadeOut: 2.0, loop: true },
+    hud: `
+      <div class="bi-up">
+        <img src="assets/chan-avatar.png" alt="">
+        <span class="bi-name">大肥鱼</span>
+        <span class="bi-follow">+ 关注</span>
+      </div>
+      <div class="bi-credit">本视频由 DeepSeek Harness 中的 DeepSeek V4.1 生成</div>`,
+    // 常驻层只做一件小事：把 UP 主条和生成署名的入场排上（画面其余部分都归各章自己管）
+    build(tl, film, { hud }) {
+      tl.from(hud.querySelector('.bi-up'), { opacity: 0, y: 18 }, { at: 0.3, dur: 0.6, ease: 'outCubic' });
+      tl.from(hud.querySelector('.bi-credit'), { opacity: 0 }, { at: 0.5, dur: 0.8, ease: 'outQuad' });
+    },
+    chapters: [
+      {
+        // 7.0s：大标题/副标题各留足阅读时间，中段故意静 1.7s 给人读完，末拍 6.70 —— 留 0.30s
+        id: 'hook', title: '开场', dur: 7.0, rhythm: 'anchor',
+        html: `
+          <span class="bi-chip" data-carry="chip">01 开场</span>
+          <div class="bi-wrap mid pad">
+            <span class="b1-kicker">DSH 插件 · HTML MOTION KIT</span>
+            <h1 class="bi-t1 grad-text">给你的插件一支介绍片</h1>
+            <p class="b1-lede">说一句需求就出片 —— 这支片子，就是它自己做的</p>
+            <div class="b1-mini"><span>开箱就好看</span><span>超高扩展</span><span>改一版重跑</span></div>
+            <span class="b1-boot">自举：自己写、自己审、自己导出</span>
+          </div>
+          <img class="bi-chan b1-chan" src="assets/chan-hero.png" alt="">`,
+        build(tl, el) {
+          tl.from(el.querySelector('.bi-chip'), { opacity: 0, y: -12 }, { at: 0.05, dur: 0.45, ease: 'outCubic' });
+          tl.from(el.querySelector('.b1-kicker'), { opacity: 0, y: 14 }, { at: 0.25, dur: 0.5, ease: 'outCubic' });
+          fx.textIn(tl, el.querySelector('.bi-t1'), { at: 0.5, preset: 'line', dur: 0.9, ease: 'outCubic' });
+          tl.from(el.querySelector('.b1-chan'), { opacity: 0, y: 70 }, { at: 0.7, dur: 0.9, ease: 'outCubic' });
+          tl.modify(el.querySelector('.b1-chan'), (lt) => ({ scaleY: 1 + Math.sin(lt * 1.5) * 0.012 }), { mode: 'add' });
+          fx.textIn(tl, el.querySelector('.b1-lede'), { at: 1.9, preset: 'line', dur: 0.75, ease: 'outCubic' });
+          fx.staggerIn(tl, el.querySelectorAll('.b1-mini span'), { at: 3.4, stagger: 0.25, dur: 0.5, from: { y: 22, opacity: 0 } });
+          tl.from(el.querySelector('.b1-boot'), { opacity: 0, y: 18 }, { at: 6.1, dur: 0.6, ease: 'outCubic' });
+          tl.audio('assets/sfx-click.mp3', 3.5, { volume: 0.5 });
+        },
+      },
+      {
+        // 5.3s：三行痛点 0.55s 一行（每行 ~1s 阅读），结论 3.30，强调一拍 4.35 —— 留 0.45s
+        id: 'pain', title: '痛点', dur: 5.3, rhythm: 'dense',
+        html: `
+          <span class="bi-chip" data-carry="chip">02 痛点</span>
+          <div class="bi-wrap pad2">
+            <h2 class="bi-t2">插件写完了，介绍片呢</h2>
+            <div class="b2-list">
+              <div class="b2-row"><b>1</b><span>录屏二十分钟，重点全在鼠标轨迹上</span></div>
+              <div class="b2-row"><b>2</b><span>剪一版要一下午，界面一改又得重录</span></div>
+              <div class="b2-row"><b>3</b><span>找设计师做动画，排期比写插件还久</span></div>
+            </div>
+            <p class="b2-note">于是介绍片永远是<em>下次再录</em>。</p>
+          </div>
+          <img class="bi-chan b2-chan" src="assets/chan-tired.png" alt="">`,
+        build(tl, el) {
+          fx.textIn(tl, el.querySelector('.bi-t2'), { at: 0.3, preset: 'line', dur: 0.75, ease: 'outCubic' });
+          tl.from(el.querySelector('.b2-chan'), { opacity: 0, x: 46 }, { at: 0.7, dur: 0.85, ease: 'outCubic' });
+          tl.modify(el.querySelector('.b2-chan'), (lt) => ({ scaleY: 1 + Math.sin(lt * 1.5) * 0.012 }), { mode: 'add' });
+          fx.staggerIn(tl, el.querySelectorAll('.b2-row'), { at: 1.05, stagger: 0.55, dur: 0.55, from: { y: 26, opacity: 0 } });
+          tl.from(el.querySelector('.b2-note'), { opacity: 0, y: 16 }, { at: 3.3, dur: 0.7, ease: 'outCubic' });
+          tl.fromTo(el.querySelector('.b2-note em'), { scale: 1 }, { scale: 1.14 }, { at: 4.4, dur: 0.24, ease: 'outBack' });
+          tl.to(el.querySelector('.b2-note em'), { scale: 1 }, { at: 4.64, dur: 0.26, ease: 'outQuad' });
+          tl.audio('assets/sfx-click.mp3', 4.4, { volume: 0.5 });
+        },
+      },
+      {
+        // 7.0s：公式/标签/数据驱动各留停读时间，最后光标点卡片 6.60 —— 留 0.40s
+        id: 'idea', title: '视频即代码', dur: 7.0, rhythm: 'dense',
+        html: `
+          <span class="bi-chip" data-carry="chip">03 视频即代码</span>
+          <div class="bi-wrap pad3">
+            <h2 class="bi-t2">视频，其实就是代码</h2>
+            <div class="b3-card">
+              <span class="b3-eq">video = f(t)</span>
+              <span class="b3-cap">画面是时间 t 的纯函数：预览、抽帧、导出永远是同一帧</span>
+            </div>
+            <div class="b3-chips"><span>HTML / CSS / JS 直接写</span><span>可拖动预览</span><span>可跳章重跑</span></div>
+            <p class="b3-note2">同一份代码，换一份数据就是<em>另一支片子</em></p>
+          </div>
+          <img class="bi-chan b3-chan" src="assets/chan-point.png" alt="">`,
+        build(tl, el, ctx) {
+          fx.textIn(tl, el.querySelector('.bi-t2'), { at: 0.3, preset: 'line', dur: 0.75, ease: 'outCubic' });
+          tl.from(el.querySelector('.b3-chan'), { opacity: 0, x: 52 }, { at: 0.6, dur: 0.9, ease: 'outCubic' });
+          tl.modify(el.querySelector('.b3-chan'), (lt) => ({ scaleY: 1 + Math.sin(lt * 1.5) * 0.012 }), { mode: 'add' });
+          tl.from(el.querySelector('.b3-card'), { opacity: 0, y: 30 }, { at: 0.7, dur: 0.75, ease: 'outCubic' });
+          fx.textIn(tl, el.querySelector('.b3-eq'), { at: 1.0, preset: 'line', dur: 0.65 });
+          fx.textIn(tl, el.querySelector('.b3-cap'), { at: 1.75, preset: 'fade', dur: 0.65 });
+          fx.staggerIn(tl, el.querySelectorAll('.b3-chips span'), { at: 3.0, stagger: 0.28, dur: 0.5, from: { y: 20, opacity: 0 } });
+          tl.from(el.querySelector('.b3-note2'), { opacity: 0, y: 16 }, { at: 4.4, dur: 0.65, ease: 'outCubic' });
+          ctx.cursor([{ to: el.querySelector('.b3-card'), at: 5.9, dur: 0.7, ease: 'inOutCubic' }]);
+          tl.audio('assets/sfx-click.mp3', 6.6, { volume: 0.48 });
+        },
+      },
+      {
+        // 6.1s：四张卡 0.5s 一张（每张 ~1s 阅读），光标依次点第 3、4 张 —— 留 0.40s
+        id: 'parts', title: '开箱就好看', dur: 6.1, rhythm: 'dense',
+        html: `
+          <span class="bi-chip" data-carry="chip">04 开箱就好看</span>
+          <div class="bi-wrap">
+            <h2 class="bi-t2">开箱就好看</h2>
+            <p class="bi-sub">不是套模板：镜头语言和零件库都是现成的</p>
+            <div class="b4-grid">
+              <div class="b4-card"><div class="b4-vis v1"></div><b>三种叙事模式</b><span>连续 / 翻页 / 教程，镜头与背景全程不停</span></div>
+              <div class="b4-card"><div class="b4-vis v2"></div><b>fx 零件库</b><span>文字入场、计数、高亮、粒子、打字机</span></div>
+              <div class="b4-card"><div class="b4-vis v3"></div><b>视觉层</b><span>GLSL 着色器、Canvas2D 伪 3D、网格角色</span></div>
+              <div class="b4-card"><div class="b4-vis v4"></div><b>时间与声音</b><span>转场、字幕、标记、音效与音频包络</span></div>
+            </div>
+          </div>`,
+        build(tl, el, ctx) {
+          fx.textIn(tl, el.querySelector('.bi-t2'), { at: 0.3, preset: 'line', dur: 0.75, ease: 'outCubic' });
+          fx.textIn(tl, el.querySelector('.bi-sub'), { at: 0.7, preset: 'fade', dur: 0.6 });
+          fx.staggerIn(tl, el.querySelectorAll('.b4-card'), { at: 1.45, stagger: 0.5, dur: 0.6, from: { y: 26, opacity: 0 } });
+          ctx.cursor([
+            { to: el.querySelector('.b4-card:nth-child(3)'), at: 3.9, dur: 0.7, ease: 'inOutCubic' },
+            { to: el.querySelector('.b4-card:nth-child(4)'), at: 5.0, dur: 0.7, ease: 'inOutCubic' },
+          ]);
+          tl.audio('assets/sfx-click.mp3', 5.7, { volume: 0.48 });
+        },
+      },
+      {
+        // 6.0s：五行注册点 0.42s 一行，整屏停 2.4s，光标落到"任意 HTML/JS" —— 留 0.40s
+        id: 'extend', title: '超高扩展', dur: 6.0, rhythm: 'dense',
+        html: `
+          <span class="bi-chip" data-carry="chip">05 超高扩展</span>
+          <div class="bi-wrap">
+            <h2 class="bi-t2">超高扩展</h2>
+            <p class="bi-sub">效果都能注册进来，用一次就沉淀成以后每支片子的能力</p>
+            <div class="b5-tools">
+              <div class="b5-tool"><b>registerBackground</b><span>自定义背景层：网格、粒子、数据可视化</span></div>
+              <div class="b5-tool"><b>registerTransition</b><span>自定义转场，自动带上音效</span></div>
+              <div class="b5-tool"><b>defineOp / Preset</b><span>把常用效果封装成可复用算子</span></div>
+              <div class="b5-tool"><b>registerBehaviour</b><span>给节点图加新行为：噪声、振荡、弹簧</span></div>
+              <div class="b5-tool"><b>任意 HTML/JS</b><span>天花板就是浏览器，能画的都能画</span></div>
+            </div>
+            <p class="b5-note">写一次，之后<em>每一支片子</em>都能直接用。</p>
+          </div>`,
+        build(tl, el, ctx) {
+          fx.textIn(tl, el.querySelector('.bi-t2'), { at: 0.3, preset: 'line', dur: 0.75, ease: 'outCubic' });
+          fx.textIn(tl, el.querySelector('.bi-sub'), { at: 0.7, preset: 'fade', dur: 0.6 });
+          fx.staggerIn(tl, el.querySelectorAll('.b5-tool'), { at: 1.4, stagger: 0.42, dur: 0.5, from: { x: -24, opacity: 0 } });
+          tl.from(el.querySelector('.b5-note'), { opacity: 0, y: 16 }, { at: 4.0, dur: 0.65, ease: 'outCubic' });
+          ctx.cursor([{ to: el.querySelector('.b5-tool:nth-child(5)'), at: 4.9, dur: 0.7, ease: 'inOutCubic' }]);
+          tl.audio('assets/sfx-click.mp3', 5.6, { volume: 0.48 });
+        },
+      },
+      {
+        // 8.2s：六步 0.38s 一步，整屏停 1.4s 再出结论，光标走 4→5 并按下"导出" —— 留 0.43s
+        id: 'flow', title: '怎么出片', dur: 8.2, rhythm: 'dense',
+        html: `
+          <span class="bi-chip" data-carry="chip">06 怎么出片</span>
+          <div class="bi-wrap">
+            <h2 class="bi-t2">给你自己的插件出一支</h2>
+            <div class="b6-flow">
+              <div class="b6-step"><i>1</i><span>装一次：<em>dsh plugin add link:$(pwd)</em></span></div>
+              <div class="b6-step"><i>2</i><span>agent 读你插件的 README、命令和界面</span></div>
+              <div class="b6-step"><i>3</i><span>写 <em>projects/你的插件/index.html</em></span></div>
+              <div class="b6-step"><i>4</i><span>motion_audit 扫全片：0 条阻塞问题才准导出</span></div>
+              <div class="b6-step"><i>5</i><span>motion_render 导出 <em>out.mp4</em>，直接进仓库</span></div>
+              <div class="b6-step"><i>6</i><span>插件改版？改 index.html 重跑一遍</span></div>
+            </div>
+            <span class="b6-verdict">✓ 片子和代码一起版本化</span>
+          </div>`,
+        build(tl, el, ctx) {
+          fx.textIn(tl, el.querySelector('.bi-t2'), { at: 0.3, preset: 'line', dur: 0.75, ease: 'outCubic' });
+          fx.staggerIn(tl, el.querySelectorAll('.b6-step'), { at: 1.2, stagger: 0.38, dur: 0.5, from: { y: 22, opacity: 0 } });
+          tl.from(el.querySelector('.b6-verdict'), { opacity: 0, y: 18 }, { at: 4.4, dur: 0.6, ease: 'outCubic' });
+          ctx.cursor([
+            { to: el.querySelector('.b6-step:nth-child(4)'), at: 5.4, dur: 0.7, ease: 'inOutCubic' },
+            { to: el.querySelector('.b6-step:nth-child(5)'), at: 6.6, dur: 0.7, ease: 'inOutCubic' },
+          ]);
+          const step5 = el.querySelector('.b6-step:nth-child(5)');
+          tl.audio('assets/sfx-click.mp3', 7.45, { volume: 0.5 });
+          tl.to(step5, { scale: 0.96 }, { at: 7.45, dur: 0.08, ease: 'outQuad' });
+          tl.to(step5, { scale: 1 }, { at: 7.53, dur: 0.24, ease: 'outBack' });
+        },
+      },
+      {
+        // 9.0s：末幕刻意留长——最后一拍 6.02，之后静置 ~3s 让三连 / 安装命令 / 署名停留可读
+        id: 'outro', title: '收工', dur: 9.0, rhythm: 'anchor',
+        html: `
+          <span class="bi-chip" data-carry="chip">07 收工</span>
+          <div class="bi-wrap mid pad">
+            <h2 class="bi-t2">一键三连，也给自己来一支</h2>
+            <div class="b7-trio">
+              <div class="b7-tok">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fb7299" d="M12 21s-7.2-4.6-9.2-9.1A5.3 5.3 0 0 1 12 6.4a5.3 5.3 0 0 1 9.2 5.5C19.2 16.4 12 21 12 21z"/></svg>
+                <span>点赞</span>
+              </div>
+              <div class="b7-tok">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#fb7299"/><circle cx="12" cy="12" r="3.6" fill="#ffe6ee"/></svg>
+                <span>投币</span>
+              </div>
+              <div class="b7-tok">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fb7299" d="M12 2.6l2.9 6.1 6.7.9-4.9 4.6 1.3 6.6L12 17.6 6 20.8l1.3-6.6L2.4 9.6l6.7-.9z"/></svg>
+                <span>收藏</span>
+              </div>
+            </div>
+            <div class="b7-links">
+              <span class="b7-cmd">dsh plugin --profile web add link:$(pwd)</span>
+              <span class="b7-url">github.com/Slapq/html-motion-kit</span>
+            </div>
+            <p class="b7-credit">本视频由 DeepSeek Harness 中的 DeepSeek V4.1 生成</p>
+          </div>
+          <img class="bi-chan b7-chan" src="assets/chan-like.png" alt="">`,
+        build(tl, el, ctx) {
+          fx.textIn(tl, el.querySelector('.bi-t2'), { at: 0.3, preset: 'line', dur: 0.8, ease: 'outCubic' });
+          tl.from(el.querySelector('.b7-chan'), { opacity: 0, y: 54 }, { at: 0.7, dur: 0.85, ease: 'outCubic' });
+          tl.modify(el.querySelector('.b7-chan'), (lt) => ({ scaleY: 1 + Math.sin(lt * 1.5) * 0.012 }), { mode: 'add' });
+          fx.staggerIn(tl, el.querySelectorAll('.b7-tok'), { at: 1.2, stagger: 0.35, dur: 0.6, from: { y: 26, opacity: 0, scale: 0.9 } });
+          fx.staggerIn(tl, el.querySelectorAll('.b7-links span'), { at: 2.8, stagger: 0.3, dur: 0.5, from: { y: 18, opacity: 0 } });
+          tl.from(el.querySelector('.b7-credit'), { opacity: 0, y: 14 }, { at: 3.9, dur: 0.55, ease: 'outCubic' });
+          ctx.cursor([
+            { to: el.querySelector('.b7-tok'), at: 4.9, dur: 0.7, ease: 'inOutCubic' },
+            { hide: 6.3 },
+          ]);
+          const tok = el.querySelector('.b7-tok');
+          tl.audio('assets/sfx-click.mp3', 5.7, { volume: 0.5 });
+          tl.to(tok, { scale: 0.96 }, { at: 5.7, dur: 0.08, ease: 'outQuad' });
+          tl.to(tok, { scale: 1 }, { at: 5.78, dur: 0.24, ease: 'outBack' });
+        },
+      },
+    ],
+  });
+</script>
+</body>
+</html>

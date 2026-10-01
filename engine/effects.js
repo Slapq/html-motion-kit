@@ -37,7 +37,7 @@ export function splitText(el, by = 'char') {
 
 // Presets: 'line' | 'fade' | 'rise' | 'drop' | 'blur' | 'pop' | 'flip' | 'wave'
 // 'line' and 'fade' animate the whole element (no splitting) — use them for display type (>64px),
-// where per-character blur/scale smears letters into each other (docs/lessons.md §3.3).
+// where per-character blur/scale smears letters into each other.
 const TEXT_PRESETS = {
   line: [{ y: 28, opacity: 0 }, 'outCubic', 0.95],
   fade: [{ opacity: 0 }, 'outQuad', 0.8],

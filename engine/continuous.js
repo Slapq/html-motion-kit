@@ -1,6 +1,6 @@
 // Continuous mode: one long world strip + a camera that never stops + a persistent background
 // + a progress axis. Chapters are placed side by side; the engine computes their `left`, the
-// camera keys (speed-limited, see docs/lessons.md §2.2) and the progress ticks.
+// camera keys (speed-limited) and the progress ticks.
 //
 //   createVideo({ chapters: [{ id, title, dur, html, build(tl, el, ctx) }], background: 'network', progress: true })
 //

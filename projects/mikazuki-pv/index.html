@@ -1,0 +1,620 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>三日月ステップ · PV</title>
+  <link rel="stylesheet" href="../../engine/base.css">
+  <style>
+    /* 三日月ステップ（r-906 feat. 初音ミク）PV v2
+       解读：君 = 还没出名的"三日月"偶像，僕 = 单恋的粉丝。朱色黄昏里只有僕在楼缝间看见她 → 副歌里僕踩着楼顶一级级往月亮爬 →
+       爆料把她关进笼子、标价出售 → 愤怒与"粗末なアイロニー" → 明知"不是我的"仍然伸出手，差一点点。
+       这一支片子的原则：
+       1. 只用几何。月牙（圆减圆）= 君，一个小点 = 僕。故事只靠位置、距离、遮挡讲。
+       2. 一句歌词 = 一个镜头。句内缓慢滑动（蓄势）；换句时冲刺：前几帧慢，最后两三帧跳到下一个构图，带真实拖影（快门内多次采样平均），落定后清晰。
+       3. 镜头长度差 4 倍以上：主歌长、副歌中、爆发段短，间奏越切越快；安静段死死定住。
+       4. 每个交界都有东西活下来：月牙一直在；僕走过的那条线（爬楼、坠落、奔跑）把镜头串起来。
+       5. 不闪、不抖。只有真正"打到"的地方震一下：虫唾が走る、127.9 的闪白、でも嫌なんだ!
+       6. 城市是一组固定的楼，不回收、不凭空长出来；楼顶就是台阶。
+       7. カゴの中 = 雨变成竖线冲下来切开月牙；売られてた = 竖线排成条码，月牙被框进矩形。只用直线和矩形。 */
+    .stage, .film { background: #000; }
+    .mk-cv { position: absolute; left: 0; top: 0; }
+  </style>
+</head>
+<body>
+<script type="module">
+  import { createVideo } from '../../engine/index.js';
+
+  const DUR = 186.8, W = 1920, H = 1080, BEAT = 60 / 167, SHUT = 1 / 60;
+  const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+  const ramp = (t, a, b) => clamp((t - a) / (b - a));
+  const sm = (x) => x * x * (3 - 2 * x);
+  const oc = (x) => 1 - Math.pow(1 - x, 3);
+  const ob = (x) => { const c = 1.9; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const hash = (i, s = 0) => { const x = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return x - Math.floor(x); };
+  const win = (t, a, b, f = 0.3) => sm(ramp(t, a - f, a)) * (1 - sm(ramp(t, b, b + f)));
+  const JP = '"Yu Gothic", "YuGothic", "Meiryo", "Microsoft YaHei", sans-serif';
+  const SERIF = '"Yu Mincho", "YuMincho", "MS Mincho", "SimSun", serif';
+
+  // ---- 调色：每段一套色，段与段之间平滑过渡 ----
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const P = (top, bot, far, near, acc, moon, txt, stars) => ({ top: hex(top), bot: hex(bot), far: hex(far), near: hex(near), acc: hex(acc), moon: hex(moon), txt: hex(txt), stars });
+  const WHITE = P('#f5f4f1', '#ebe9e4', '#dcd8d1', '#cec9c0', '#ffd27a', '#8f8f8f', '#3a3a3a', 0);
+  const DUSK = P('#3a2a6c', '#ff6a3d', '#6d2f52', '#2a1733', '#ffc46b', '#fff1c8', '#ffffff', .25);
+  const PINK = P('#1b1f5e', '#ff8fb8', '#4c3a8c', '#21163f', '#ffe28a', '#fffbe8', '#ffffff', .85);
+  const NIGHT = P('#0b1033', '#3a3f9e', '#272b68', '#120f2e', '#ffd36b', '#fff6d8', '#ffffff', 1);
+  const COLD = P('#070b14', '#2b3850', '#1b2433', '#0c111a', '#8fb3d9', '#cfd8e6', '#dfe7f2', .3);
+  const GRIEF = P('#0a0d18', '#3b3352', '#221d33', '#0d0b16', '#b39ad9', '#d8d2ea', '#ece8f6', .4);
+  const RED = P('#1c0208', '#c8122f', '#4a0615', '#14030a', '#ff5a6e', '#ffe2e2', '#ffffff', 0);
+  const QUIET = P('#04050c', '#1a1d3a', '#0f1124', '#070812', '#9aa8ff', '#f0f2ff', '#f2f4ff', .7);
+  const FINAL = P('#2c2a78', '#ff9a7a', '#6b3a78', '#25163f', '#ffe0a0', '#fff6dc', '#ffffff', .55);
+  const PAL = [[0, WHITE], [25.2, DUSK], [46.9, PINK], [67.6, NIGHT], [83.0, COLD], [105.6, GRIEF], [116.0, RED], [139.4, QUIET], [150.4, FINAL], [165.0, WHITE]];
+  function palAt(t) {
+    let i = 0; while (i < PAL.length - 1 && PAL[i + 1][0] <= t) i++;
+    const a = PAL[i][1], n = PAL[i + 1];
+    if (!n) return a;
+    const span = n[0] === 67.6 ? 2.5 : n[0] === 139.4 ? 0.05 : n[0] === 116.0 ? 0.3 : 1.2;
+    const k = sm(ramp(t, n[0] - span, n[0])), b = n[1], o = {};
+    for (const key in a) o[key] = typeof a[key] === 'number' ? lerp(a[key], b[key], k) : a[key].map((v, c) => lerp(v, b[key][c], k));
+    return o;
+  }
+  const rgb = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+  const mixc = (c1, c2, k) => c1.map((v, i) => lerp(v, c2[i], k));
+
+  // ---- 镜头语法：一句一镜。shots = [[t0, A, B]]：t0 起从 A 缓慢滑向 B；到下一镜前 D 秒冲刺（u^4：前几帧几乎不动，最后两三帧跳到位）----
+  const dashD = (len) => clamp(len * 0.22, 0.12, 0.3);
+  function track(shots, end) {
+    const S = shots.map(([t0, a, b], i) => ({ t0, a, b: b || a, t1: shots[i + 1] ? shots[i + 1][0] : end }));
+    S.forEach((s, i) => { s.d = S[i + 1] ? dashD(s.t1 - s.t0) : 0; });
+    const slide = (s, t) => { const span = s.t1 - s.d - s.t0, u = clamp((t - s.t0) / Math.max(1e-3, span)); return s.a.map((v, c) => lerp(v, s.b[c], u)); };
+    return (t) => {
+      let i = 0; while (i < S.length - 1 && S[i + 1].t0 <= t) i++;
+      const s = S[i];
+      if (t < s.t0) return s.a.slice();
+      if (!S[i + 1] || t < s.t1 - s.d) return slide(s, t);
+      const from = s.b, to = S[i + 1].a, u = Math.pow(ramp(t, s.t1 - s.d, s.t1), 4);
+      return from.map((v, c) => lerp(v, to[c], u));
+    };
+  }
+
+  // ---- 世界：x 向右、y 向上、z 向里。固定的一组楼，不回收、不凭空长出 ----
+  const F0 = 900;
+  // 台阶 = 前排楼顶：S1 副歌一（每 2 拍一级），S2 最后的副歌（每拍一级）
+  const S1 = { x0: 1500, t0: 47.3, per: 2 * BEAT, n: 34, h0: 200, dh: 42 }, S2 = { x0: 22600, t0: 150.8, per: BEAT, n: 34, h0: 200, dh: 30 };
+  const STEP = 240, SW = 200, RZ = 0, RD = 220;
+  const BLD = [];
+  function row(layer, z0, dep, xa, xb, hmin, hmax, seed, skip = []) {
+    let x = xa, i = 0;
+    while (x < xb) {
+      const w = 160 + 180 * hash(i, seed), gap = 30 + 70 * hash(i, seed + 1);
+      if (!skip.some(([a, b]) => x + w > a && x < b)) {
+        const h = hmin + (hmax - hmin) * Math.pow(hash(i, seed + 2), 1.4);
+        BLD.push({ layer, x0: x, x1: x + w, h, z0, z1: z0 + dep, win: winsOf(w, h, seed * 1000 + i) });
+      }
+      x += w + gap; i++;
+    }
+  }
+  function winsOf(w, h, s) {
+    const out = [], cols = Math.floor((w - 20) / 34), rows = Math.floor((h - 30) / 46);
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (hash(r * 37 + c, s) < 0.14) out.push([12 + c * 34, h - 24 - r * 46, 18, 22]);
+    return out;
+  }
+  const stairBox = (S, k) => ({ layer: 0, x0: S.x0 + k * STEP, x1: S.x0 + k * STEP + SW, h: S.h0 + S.dh * k, z0: RZ, z1: RZ + RD, win: [], stair: true });
+  row(0, RZ, RD, -3000, S1.x0 - 60, 120, 280, 3, [[850, 1150]]);
+  for (let k = 0; k < S1.n; k++) BLD.push(stairBox(S1, k));
+  row(0, RZ, RD, S1.x0 + S1.n * STEP + 40, S2.x0 - 60, 120, 300, 5);
+  for (let k = 0; k < S2.n; k++) BLD.push(stairBox(S2, k));
+  row(0, RZ, RD, S2.x0 + S2.n * STEP + 40, 40000, 120, 300, 6);
+  row(1, 900, 500, -3000, 40000, 520, 1150, 7, [[760, 1300]]);
+  row(2, 3500, 800, -4000, 46000, 400, 1700, 9);
+  BLD.sort((a, b) => b.z0 - a.z0);
+  for (const b of BLD) for (const w of b.win) w.push(hash(w[0] * 7 + w[1], b.x0) * 0.5 + 0.3);
+
+  // 镜头向量 [cx, cy, cz, f, roll, hz,  mx, my, mr, ph]：前 6 个是相机，后 4 个是月（屏幕空间，月在无穷远）
+  const camOf = (v) => ({ cx: v[0], cy: v[1], cz: v[2], F: F0 * v[3], roll: v[4], hz: v[5] });
+  function proj(X, Y, Z, c) {
+    const z = Z - c.cz;
+    if (z < 30) return null;
+    return [W / 2 + ((X - c.cx) * c.F) / z, H / 2 + c.hz - ((Y - c.cy) * c.F) / z, c.F / z];
+  }
+  // 把世界点 P 放在屏幕 (sx, sy)，相机离它 d、比它高 lift
+  function aim(P, { sx = 960, sy = 640, d = 1300, lift = 300, f = 1, roll = 0 } = {}, m = [1300, 260, 90, 0.2]) {
+    const F = F0 * f;
+    return [P[0] - ((sx - W / 2) * d) / F, P[1] + lift, P[2] - d, f, roll, sy - H / 2 - (lift * F) / d, ...m];
+  }
+
+  // ---- 僕：世界里的一个点。楼顶 → 台阶 → 坠落到街面 → 在楼顶上奔跑 → 再爬一次 ----
+  const PERCH = { layer: 0, x0: 560, x1: 800, h: 240, z0: RZ, z1: RZ + RD, win: [] };
+  BLD.push(PERCH);
+  const FZ = RZ + 40;
+  const stepTop = (S, k) => [S.x0 + k * STEP + SW / 2, S.h0 + S.dh * k, FZ];
+  function onStairs(S, t) {
+    const k = Math.max(0, (t - S.t0) / S.per), kc = Math.floor(k), f = k - kc;
+    const a = stepTop(S, kc), b = stepTop(S, kc + 1), u = clamp(f / 0.5);
+    return [lerp(a[0], b[0], sm(u)), lerp(a[1], b[1], u) + Math.sin(Math.PI * u) * 70, FZ];
+  }
+  function arc(a, b, t0, t1, t, hgt) {
+    const f = ramp(t, t0, t1);
+    return [lerp(a[0], b[0], f), lerp(a[1], b[1], f) + Math.sin(Math.PI * f) * hgt, lerp(a[2], b[2], f)];
+  }
+  const roofAt = (x) => { let h = null; for (const b of BLD) if (b.layer === 0 && !b.stair && x >= b.x0 + 10 && x <= b.x1 - 10) h = Math.max(h ?? 0, b.h); return h; };
+  const RUN = { t0: 116.3, t1: 139.4, x0: 10400, v: 182 };
+  const runIdx = (j) => { const x = RUN.x0 + j * RUN.v; return [x, roofAt(x) ?? 170]; };
+  const RUNY = Array.from({ length: 80 }, (_, j) => runIdx(j));
+  function onRun(t) {
+    const j = clamp((t - RUN.t0) / BEAT, 0, (RUN.t1 - RUN.t0) / BEAT), jc = Math.floor(j), f = j - jc;
+    const a = RUNY[jc], b = RUNY[jc + 1];
+    return [lerp(a[0], b[0], f), lerp(a[1], b[1], f) + Math.sin(Math.PI * f) * 60, FZ];
+  }
+  const TOP1 = stepTop(S1, 32), STREET = [TOP1[0] + 200, 0, -150], RUNEND = onRun(RUN.t1);
+  function bokuAt(t) {
+    if (t < 46.6) return [lerp(600, 760, ramp(t, 26, 46)), PERCH.h, FZ];
+    if (t < S1.t0) return arc([760, PERCH.h, FZ], stepTop(S1, 0), 46.6, S1.t0, t, 260);
+    if (t < 70.4) return onStairs(S1, t);
+    if (t < 82.6) return TOP1;
+    if (t < 83.4) { const f = ramp(t, 82.6, 83.4); return [lerp(TOP1[0], STREET[0], f), TOP1[1] * (1 - f * f), lerp(FZ, STREET[2], f)]; }
+    const walk = [STREET[0] + (Math.min(t, 115.9) - 83.4) * 12, 0, STREET[2]];
+    if (t < 115.9) return walk;
+    if (t < RUN.t0) return arc(walk, onRun(RUN.t0), 115.9, RUN.t0, t, 260);
+    if (t < RUN.t1) return onRun(t);
+    if (t < 150.4) return RUNEND;
+    if (t < S2.t0) return arc(RUNEND, stepTop(S2, 0), 150.4, S2.t0, t, 300);
+    return onStairs(S2, Math.min(t, 162.4));
+  }
+
+  // ---- 分镜：一句一镜。[t0, A, B, 月A, 月B]；A/B 是 aim() 的构图参数，月 = [x, y, 半径, 月相]；'gap' = 放进楼缝 ----
+  const o = (sx, sy, d, lift, f = 1, roll = 0) => ({ sx, sy, d, lift, f, roll });
+  const SH = [
+    [0, o(960, 1700, 1400, 1600), null, [960, 470, 150, 1]],
+    [24.4, o(960, 1700, 1400, 1600), null, [960, 470, 150, 1], [960, 460, 110, 0.2]],
+    [25.9, o(700, 800, 2600, 150), o(720, 800, 2350, 160), ['gap', 330, 70, 0.18]],
+    [28.8, o(1250, 760, 1500, 250), o(1220, 760, 1400, 260), [1700, 250, 60, 0.18]],
+    [31.6, o(960, 1000, 1800, -60, 0.8), o(960, 990, 1700, -50, 0.8), ['gap', 220, 80, 0.18]],
+    [34.5, o(760, 700, 700, 120, 1.2), o(800, 700, 680, 120, 1.2), [1500, 260, 70, 0.18]],
+    [37.5, o(600, 860, 1200, 80), o(620, 860, 1100, 80), ['gap', 300, 80, 0.2]],
+    [40.0, o(1000, 820, 2000, 300), o(1000, 820, 1850, 300), ['gap', 280, 85, 0.2]],
+    [43.2, o(860, 760, 1100, 120, 1.1), o(880, 760, 1050, 120, 1.1), ['gap', 300, 90, 0.2]],
+    [44.6, o(700, 820, 1800, 200), o(700, 820, 1700, 200), ['gap', 270, 95, 0.2]],
+    [46.7, o(800, 700, 1500, 300), o(900, 700, 1500, 300), [1300, 260, 110, 0.22]],
+    [47.3, o(640, 680, 1400, 260), o(640, 680, 1350, 260), [1400, 260, 120, 0.25], [1380, 250, 125, 0.25]],
+    [50.3, o(420, 900, 1800, 40, 0.9), o(440, 900, 1700, 40, 0.9), [1200, 360, 200, 0.2]],
+    [52.5, o(760, 720, 1000, 200), o(760, 720, 950, 200), [1450, 230, 140, 0.25]],
+    [54.3, o(960, 560, 1300, 900), o(960, 560, 1250, 900), [1600, 160, 110, 0.3]],
+    [56.1, o(1200, 760, 1600, 150, 1, 0.03), o(1200, 760, 1500, 150, 1, 0.03), [700, 240, 150, 0.3]],
+    [58.3, o(960, 820, 3000, 400), o(960, 820, 2800, 400), [1300, 260, 180, 0.3], [1300, 260, 195, 0.5]],
+    [61.9, o(1350, 700, 1100, 200), o(1330, 700, 1050, 200), [520, 260, 150, 0.3]],
+    [64.0, o(760, 760, 900, 160), o(760, 760, 860, 160), [1300, 260, 200, 0.3]],
+    [65.9, o(700, 600, 1300, 1000, 1, -0.03), o(720, 600, 1250, 1000, 1, -0.03), [1500, 200, 160, 0.35]],
+    [67.6, o(900, 860, 3400, 500), o(900, 860, 3800, 500), [1150, 300, 220, 0.35]],
+    [70.4, o(960, 900, 2200, 100, 0.9), o(960, 900, 2000, 100, 0.9), [960, 360, 300, 0.35], [960, 350, 310, 0.4]],
+    [73.27, o(600, 760, 1200, 200), o(620, 760, 1150, 200), [1350, 330, 260, 0.6]],
+    [76.14, o(1320, 780, 1500, 0), o(1300, 780, 1450, 0), [560, 300, 240, 0.9]],
+    [78.3, o(960, 540, 1000, 1400), o(960, 540, 950, 1400), [1500, 180, 130, 1]],
+    [79.74, o(760, 640, 700, 100, 1.3), o(780, 640, 680, 100, 1.3), [1300, 300, 200, 0.6]],
+    [81.17, o(1200, 860, 2000, -100), o(1180, 860, 1950, -100), [800, 260, 200, 0.35]],
+    [81.89, o(960, 700, 900, 300, 1, 0.05), o(960, 700, 880, 300, 1, 0.05), [1400, 220, 160, 0.2]],
+    [82.61, o(960, 540, 1200, 200), o(960, 560, 1200, 150), [1000, 200, 140, 0.2]],
+    [82.97, o(960, 640, 1300, 0), o(960, 800, 1300, 0), [1000, 180, 130, 0.2]],
+    [83.4, o(760, 920, 1500, 60, 0.85), o(780, 920, 1450, 60, 0.85), [1250, 240, 110, 0.2], [1250, 220, 110, 0.2]],
+    [86.3, o(900, 800, 600, 40, 1.2), o(920, 800, 580, 40, 1.2), [1500, 200, 90, 0.2]],
+    [89.1, o(200, 980, 1500, 40), o(220, 980, 1400, 40), [960, 480, 260, 0.2], [980, 470, 265, 0.2]],
+    [92.1, o(260, 960, 2000, 40), o(280, 960, 1900, 40), [1150, 420, 220, 0.2]],
+    [94.9, o(960, 1000, 2000, 0), o(960, 1000, 1500, 0, 1.25), [960, 450, 200, 0.2], [960, 460, 260, 0.2]],
+    [97.8, o(960, 1020, 2400, 0), o(960, 1020, 2350, 0), [960, 480, 270, 0.2], [960, 480, 280, 0.2]],
+    [100.7, o(960, 1020, 2300, 0), o(960, 1020, 2200, 0), [960, 470, 240, 0.2], [960, 470, 250, 0.2]],
+    [103.6, o(960, 1000, 2000, 0, 1.1), o(960, 1000, 1900, 0, 1.1), [960, 470, 260, 0.2]],
+    [106.5, o(960, 900, 3000, 200), o(960, 900, 2900, 200), [960, 240, 70, 0.15]],
+    [109.0, o(260, 840, 2600, 100), o(280, 840, 2500, 100), [1660, 300, 80, 0.15]],
+    [112.3, o(1300, 800, 1400, 80), o(1300, 800, 1350, 80), [600, 260, 70, 0.15]],
+    [113.7, o(960, 640, 500, 60, 1.4), o(960, 660, 420, 60, 1.4), [1500, 200, 60, 0.15]],
+    [116.3, o(700, 700, 1400, 250, 1, 0.03), o(700, 700, 1400, 250, 1, 0.03), [1400, 300, 170, 0.25]],
+    [119.3, o(1100, 780, 900, 100, 1, -0.04), o(1100, 780, 900, 100, 1, -0.04), [600, 280, 200, 0.3]],
+    [121.5, o(960, 560, 1200, 1100), o(960, 560, 1200, 1100), [1500, 200, 140, 0.25]],
+    [123.0, o(600, 900, 1600, -40, 0.85, 0.05), o(620, 900, 1600, -40, 0.85, 0.05), [1300, 300, 230, 0.3]],
+    [125.1, o(1300, 700, 1100, 300), o(1300, 700, 1100, 300), [700, 300, 210, 0.3]],
+    [127.3, o(960, 1060, 1400, 0), o(960, 1060, 1300, 0), [960, 440, 300, 0.3]],
+    [127.9, o(960, 700, 2400, 600), o(960, 700, 2400, 600), [960, 420, 240, 0.2]],
+    [128.6, o(800, 720, 1200, 200, 1, -0.03), o(800, 720, 1200, 200, 1, -0.03), [1450, 260, 200, 0.2]],
+    [130.9, o(960, 560, 1000, 1200), o(960, 560, 1000, 1200), [500, 220, 160, 0.25]],
+    [133.0, o(960, 800, 3000, 400), o(960, 800, 2600, 400), [1250, 280, 220, 0.25]],
+    [136.6, o(960, 760, 700, 60, 1.3), o(960, 760, 600, 60, 1.3), [1450, 300, 200, 0.2]],
+    [139.4, o(960, 820, 3600, 400), null, [960, 300, 64, 0.06]],
+    [148.1, o(960, 820, 3600, 400), o(960, 820, 3200, 400), [960, 300, 64, 0.06], [960, 300, 74, 0.08]],
+    [150.4, o(900, 760, 1800, 300), o(900, 760, 1800, 300), [1300, 280, 140, 0.2]],
+    [150.8, o(640, 700, 1400, 260), o(640, 700, 1350, 260), [1400, 260, 170, 0.25]],
+    [153.8, o(420, 900, 1800, 40, 0.9), o(440, 900, 1700, 40, 0.9), [1200, 360, 260, 0.25]],
+    [156.0, o(760, 720, 1000, 200), o(760, 720, 950, 200), [1400, 240, 200, 0.3]],
+    [157.8, o(960, 560, 1300, 1000), o(960, 560, 1250, 1000), [1550, 170, 150, 0.3]],
+    [159.6, o(700, 800, 900, 120), o(720, 800, 800, 120), [1300, 330, 250, 0.3], [1250, 340, 270, 0.32]],
+    [162.4, o(700, 800, 800, 120), null, [960, 470, 150, 1]],
+  ];
+  const GAPX = 1030;
+  const SHOTS = SH.map(([t0, oa, ob, ma, mb], i) => {
+    const t1 = SH[i + 1] ? SH[i + 1][0] : DUR, d = SH[i + 1] ? dashD(t1 - t0) : 0;
+    const mk = (oo, m, tt) => {
+      const v = aim(bokuAt(tt), oo, [0, m[1], m[2], m[3]]);
+      v[6] = m[0] === 'gap' ? proj(GAPX, 0, 1150, camOf(v))[0] : m[0];
+      return v;
+    };
+    // 句内滑动要看得见：推近 ~16%，再横移，让前后楼产生视差（ob 为 null 的镜头是死定的 hold）
+    const side = i % 2 ? -1 : 1, len = t1 - t0;
+    const B = ob && { ...ob, sx: ob.sx + side * Math.min(160, 50 * len), d: ob.d * 0.84 };
+    return [t0, mk(oa, ma, t0 + 0.3), mk(B || oa, mb || ma, ob ? t1 - d + 0.3 : t0 + 0.3)];
+  });
+  const shotAt = track(SHOTS, DUR);
+
+  // ---- 只有"打到"的地方震一下；平时是极慢的手持漂浮，安静段死死定住 ----
+  const HITS = [[103.6, 26], [127.9, 34], [136.6, 22]];
+  function shakeAt(t) {
+    let x = 0, y = 0;
+    for (const [t0, a] of HITS) {
+      const u = t - t0;
+      if (u < 0 || u > 0.6) continue;
+      const e = a * Math.exp(-u * 9);
+      x += e * Math.sin(u * 71 + t0); y += e * Math.cos(u * 53 + t0 * 2);
+    }
+    const still = t > 139.4 && t < 150.4 ? 0 : 1;
+    const fl = still * (t < 25 || t > 162.4 ? 0 : 5);
+    x += fl * (Math.sin(t * 0.53) + 0.6 * Math.sin(t * 0.91 + 1.3));
+    y += fl * 0.7 * (Math.sin(t * 0.47 + 2.1) + 0.5 * Math.sin(t * 1.13));
+    return [x, y];
+  }
+  const whiteK = (t) => (1 - sm(ramp(t, 24.4, 25.6))) + sm(ramp(t, 162.6, 164.2));
+
+  function sky(g, pal, c) {
+    const hy = H / 2 + c.hz, gr = g.createLinearGradient(0, hy - 1400, 0, hy + 200);
+    gr.addColorStop(0, rgb(pal.top)); gr.addColorStop(0.7, rgb(mixc(pal.top, pal.bot, 0.55))); gr.addColorStop(1, rgb(pal.bot));
+    g.fillStyle = gr; g.fillRect(-600, -600, W + 1200, H + 1200);
+    const gd = g.createLinearGradient(0, hy, 0, hy + 260);
+    gd.addColorStop(0, rgb(mixc(pal.bot, pal.near, 0.6))); gd.addColorStop(1, rgb(mixc(pal.near, [0, 0, 0], 0.3)));
+    g.fillStyle = gd; g.fillRect(-600, hy, W + 1200, H + 1200);
+  }
+  // 星：固定位置，不闪
+  const STARS = Array.from({ length: 160 }, (_, i) => [hash(i, 1), hash(i, 2), hash(i, 3) < 0.1 ? 2.6 : 1.4, 0.35 + 0.65 * hash(i, 4)]);
+  function stars(g, pal, v) {
+    if (pal.stars < 0.02) return;
+    g.fillStyle = rgb(pal.moon);
+    for (const [u, w, s, a] of STARS) {
+      const x = ((u * (W + 600) - v[0] * 0.02) % (W + 600) + W + 600) % (W + 600) - 300, y = w * H * 0.8 - 200 + (H / 2 + v[5]) * 0.3;
+      g.globalAlpha = pal.stars * a; g.fillRect(x, y, s, s);
+    }
+    g.globalAlpha = 1;
+  }
+
+  // 月（= 君）：整圆减去偏移圆；phase 1 = 满月。slice > 0 时被竖线切开（カゴの中）
+  const mc = Object.assign(document.createElement('canvas'), { width: 1000, height: 1000 }), mg = mc.getContext('2d');
+  function moonSprite(pal, r, ph) {
+    const S = mc.width / 2, k = Math.min(1, (S - 20) / r);
+    mg.setTransform(1, 0, 0, 1, 0, 0); mg.clearRect(0, 0, mc.width, mc.height);
+    mg.translate(S, S); mg.scale(k, k); mg.rotate(-0.5);
+    mg.fillStyle = rgb(pal.moon); mg.beginPath(); mg.arc(0, 0, r, 0, Math.PI * 2); mg.fill();
+    mg.globalCompositeOperation = 'destination-out';
+    const d = r * (0.28 + 1.9 * ph);
+    mg.beginPath(); mg.arc(d, -d * 0.18, r * 1.02, 0, Math.PI * 2); mg.fill();
+    mg.globalCompositeOperation = 'source-over';
+    return k;
+  }
+  function moon(g, pal, v, t, slice = 0) {
+    const x = v[6], y = v[7], r = v[8], ph = v[9];
+    const gr = g.createRadialGradient(x, y, r * 0.3, x, y, r * 3);
+    gr.addColorStop(0, rgb(pal.acc, 0.25)); gr.addColorStop(1, rgb(pal.acc, 0));
+    g.fillStyle = gr; g.fillRect(x - r * 3, y - r * 3, r * 6, r * 6);
+    const k = moonSprite(pal, r, ph), S = mc.width / 2, sz = mc.width / k;
+    if (slice <= 0) { g.drawImage(mc, x - S / k, y - S / k, sz, sz); return; }
+    // 切成竖条，相邻条上下错开
+    const n = 14, sw = mc.width / n;
+    for (let i = 0; i < n; i++) {
+      const dy = (i % 2 ? 1 : -1) * slice * r * 0.18 * (0.6 + 0.4 * hash(i, 5));
+      g.drawImage(mc, i * sw, 0, sw - 2, mc.height, x - S / k + (i * sw) / k, y - S / k + dy, (sw - 2) / k, sz);
+    }
+  }
+
+  // ---- 楼：真正的透视盒子（正面 + 侧面 + 顶面），远处融进天色。窗灯固定，不闪 ----
+  const LAYC = (pal, L) => (L === 2 ? mixc(pal.far, pal.bot, 0.25) : L === 1 ? mixc(pal.far, pal.near, 0.55) : pal.near);
+  function city(g, pal, c, t) {
+    const vis = [];
+    for (const b of BLD) {
+      const zf = b.z0 - c.cz;
+      if (zf < 40) continue;
+      const s = c.F / zf, xl = W / 2 + (b.x0 - c.cx) * s, xr = W / 2 + (b.x1 - c.cx) * s;
+      if (xr < -300 || xl > W + 300) continue;
+      vis.push(b);
+    }
+    vis.sort((a, b) => (b.z0 - a.z0) || (Math.abs((b.x0 + b.x1) / 2 - c.cx) - Math.abs((a.x0 + a.x1) / 2 - c.cx)));
+    const s1 = Math.max(0, (t - S1.t0) / S1.per), s2 = Math.max(0, (t - S2.t0) / S2.per);
+    for (const b of vis) {
+      const col = LAYC(pal, b.layer), top = mixc(col, pal.acc, 0.18), side = mixc(col, [0, 0, 0], 0.3);
+      const q = (X, Y, Z) => proj(X, Y, Z, c);
+      const f00 = q(b.x0, 0, b.z0), f10 = q(b.x1, 0, b.z0), f11 = q(b.x1, b.h, b.z0), f01 = q(b.x0, b.h, b.z0);
+      const bz = Math.max(b.z1, c.cz + 41), back = (X, Y) => q(X, Y, bz);
+      const poly = (pts, cl) => { g.fillStyle = rgb(cl); g.beginPath(); g.moveTo(pts[0][0], pts[0][1]); for (const p of pts.slice(1)) g.lineTo(p[0], p[1]); g.closePath(); g.fill(); };
+      const ground = (p) => [p[0], p[1] + 2000 * p[2]];
+      if (c.cx < b.x0) poly([ground(f00), f01, back(b.x0, b.h), ground(back(b.x0, 0))], side);
+      if (c.cx > b.x1) poly([ground(f10), f11, back(b.x1, b.h), ground(back(b.x1, 0))], side);
+      if (c.cy > b.h) poly([f01, f11, back(b.x1, b.h), back(b.x0, b.h)], top);
+      poly([ground(f00), ground(f10), f11, f01], col);
+      // 台阶：踩过的那级楼顶亮起来，并一直亮着（路径留在城市里）
+      if (b.stair) {
+        const S = b.x0 >= S2.x0 ? S2 : S1, kk = Math.round((b.x0 - S.x0) / STEP), done = S === S1 ? s1 : s2;
+        const lit = clamp(done - kk + 0.5) * (S === S1 && t > 82.6 ? 1 - 0.6 * ramp(t, 82.6, 83.4) : 1);
+        if (lit > 0) {
+          const land = done >= kk && done < kk + 1 ? Math.exp(-(done - kk) * S.per * 6) : 0;
+          g.globalAlpha = lit; poly([f01, f11, back(b.x1, b.h), back(b.x0, b.h)], mixc(pal.acc, [255, 255, 255], 0.3 + 0.5 * land));
+          g.globalAlpha = 1;
+        }
+      }
+      if (b.win.length && f00[2] > 0.08) {
+        const sc = f00[2];
+        for (const [wx, wy, ww, wh, a] of b.win) {
+          g.fillStyle = rgb(pal.acc, a * (b.layer ? 0.55 : 0.8));
+          g.fillRect(f00[0] + wx * sc, f00[1] - (wy + wh) * sc, ww * sc, wh * sc);
+        }
+      }
+    }
+    // 远景：雾
+    g.globalAlpha = 1;
+  }
+
+  // ---- 僕：一个点 + 它刚走过的那段路 ----
+  function boku(g, pal, c, t) {
+    const pts = [];
+    for (let k = 0; k <= 24; k++) {
+      const tt = t - k * 0.06; if (tt < 25.9) break;
+      const p = bokuAt(tt), s = proj(p[0], p[1] + 14, p[2], c);
+      if (s) pts.push(s);
+    }
+    if (!pts.length) return;
+    g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+    for (let k = 1; k < pts.length; k++) {
+      g.strokeStyle = rgb(pal.txt, 0.55 * (1 - k / pts.length)); g.lineWidth = Math.max(1.5, 10 * pts[0][2]) * (1 - k / pts.length);
+      g.beginPath(); g.moveTo(pts[k - 1][0], pts[k - 1][1]); g.lineTo(pts[k][0], pts[k][1]); g.stroke();
+    }
+    const [x, y, s] = pts[0], r = Math.max(4, 16 * s);
+    const gr = g.createRadialGradient(x, y, 0, x, y, r * 4);
+    gr.addColorStop(0, rgb(pal.acc, 0.5)); gr.addColorStop(1, rgb(pal.acc, 0));
+    g.fillStyle = gr; g.fillRect(x - r * 4, y - r * 4, r * 8, r * 8);
+    g.fillStyle = rgb([255, 255, 255]); g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+    g.restore();
+  }
+
+  // ---- 主歌 2：雨是竖线 → カゴの中：全屏竖线冲下来切开月牙 → 売られてた：竖线排成条码，月牙被框进矩形 → 虫唾が走る：全部甩飞 ----
+  const NB = 34, BAR = Array.from({ length: NB }, (_, i) => ({ x: (i + 0.5) / NB, w: hash(i, 41) < 0.35 ? 22 : hash(i, 42) < 0.5 ? 10 : 3, gx: hash(i, 43) }));
+  // 条码：从左到右累加粗细与间距
+  { let x = 0; for (const b of BAR) { b.bx = x; x += b.w + (hash(b.x * 99, 44) < 0.4 ? 18 : 7); } const tot = x; for (const b of BAR) b.bx /= tot; BAR.tw = tot; }
+  const dash = (t, t1, d = 0.3) => Math.pow(ramp(t, t1 - d, t1), 4);
+  const sliceAt = (t) => sm(ramp(t, 97.95, 98.25)) * (1 - sm(ramp(t, 103.6, 104.3)));
+  function cage(g, pal, v, t) {
+    const rk = win(t, 84.0, 115.6, 1.2) * (1 - 0.7 * win(t, 97.6, 104, 0.2));
+    if (rk > 0) {
+      g.strokeStyle = rgb(pal.acc, 0.22 * rk); g.lineWidth = 1.5; g.beginPath();
+      for (let i = 0; i < 90; i++) {
+        const x = hash(i, 10) * (W + 100) - 50, L = 40 + 80 * hash(i, 12), y = ((hash(i, 11) * (H + 300) + t * (900 + 900 * hash(i, 13))) % (H + 300)) - 200;
+        g.moveTo(x, y); g.lineTo(x, y + L);
+      }
+      g.stroke();
+    }
+    if (t < 97.5 || t > 104.4) return;
+    const mx = v[6], my = v[7], r = v[8];
+    const bar = dash(t, 100.7), fly = clamp((t - 103.6) / 0.35), fa = 1 - sm(ramp(t, 103.75, 104.3));
+    const R = r * 1.25, frame = dash(t, 100.75, 0.25), cw = 1500;
+    g.fillStyle = rgb(pal.txt, 0.9 * fa);
+    for (let i = 0; i < NB; i++) {
+      const b = BAR[i], t0 = 97.6 + 0.012 * i;           // 每根竖线从上方冲下：前慢后快，0.2s 落到底
+      const drop = Math.pow(ramp(t, t0, t0 + 0.2), 3);
+      if (drop <= 0) continue;
+      const w = lerp(5, b.w, bar), x0 = lerp(b.x * W, mx - cw / 2 + b.bx * cw, bar);
+      const x = x0 + (x0 - mx) * fly * fly * 3 + (hash(i, 45) - 0.5) * 300 * fly;
+      const yb = -H + drop * 2 * H;                       // 线的下端
+      const top = Math.max(0, yb - H), bot = Math.min(H, yb);
+      if (frame > 0 && x + w > mx - R && x < mx + R) {   // 框里留给月牙
+        const ry0 = my - R * frame - 30 * (1 - frame), ry1 = my + R * frame + 30 * (1 - frame);
+        if (top < ry0) g.fillRect(x, top, w, Math.min(bot, ry0 - 18) - top);
+        if (bot > ry1) g.fillRect(x, Math.max(top, ry1 + 18), w, bot - Math.max(top, ry1 + 18));
+      } else g.fillRect(x, top, w, bot - top);
+    }
+    if (frame > 0) {
+      const s = R * (1 + 0.9 * fly * fly);
+      g.strokeStyle = rgb(pal.txt, fa); g.lineWidth = 4;
+      g.strokeRect(mx - s, my - s * frame, s * 2, s * 2 * frame);
+    }
+  }
+
+  // ---- 朱红爆发段：月牙每两拍甩出一个残影向外飞散 ----
+  function echoes(g, pal, v, t) {
+    const k = win(t, 116.2, 139.3, 0.1);
+    if (k <= 0) return;
+    const bi = Math.floor(t / BEAT);
+    for (let b = bi - 8; b <= bi; b++) {
+      if (b % 2) continue;
+      const age = t - b * BEAT;
+      if (age < 0 || age > BEAT * 8) continue;
+      const u = age / (BEAT * 8), a = hash(b, 3) * Math.PI * 2, d = oc(u) * 900;
+      const r = v[8] * (0.9 - 0.5 * u), x = v[6] + Math.cos(a) * d, y = v[7] + Math.sin(a) * d * 0.6;
+      g.globalAlpha = k * (1 - u) * 0.6;
+      g.fillStyle = rgb(pal.moon); g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.arc(x + r * 0.55, y - r * 0.1, r, 0, Math.PI * 2, true); g.fill('evenodd');
+    }
+    g.globalAlpha = 1;
+  }
+
+  // 片头片尾的重叠圆：收拢成一个圆 → 就是月
+  function rings(g, t) {
+    const k = clamp(whiteK(t));
+    if (k <= 0.01) return;
+    const n = 6, r = 150, collapse = t < 100 ? sm(ramp(t, 22.6, 24.2)) : 1 - sm(ramp(t, 163.4, 165.6)), open = sm(ramp(t, 0.2, 2.2));
+    g.save(); g.globalAlpha = k; g.strokeStyle = 'rgba(120,120,120,.75)'; g.lineWidth = 1.4;
+    for (let i = 0; i < n; i++) {
+      const u = i / (n - 1) - 0.5, dx = u * 120 * open * (1 - collapse);
+      g.beginPath(); g.arc(960 + dx, 470, r, 0, Math.PI * 2); g.stroke();
+    }
+    g.restore();
+  }
+  const moonA = (t) => (t < 25 ? sm(ramp(t, 23.2, 24.4)) : t > 163 ? 1 - sm(ramp(t, 164.6, 165.8)) : 1);
+
+  // ---- 歌词：[出现时刻, 文本, 版式]  v=竖排明朝  h=副歌大字  x=爆发  q=极小留白；'' = 清场 ----
+  const LY = [
+    [25.9, '気付いてない', 'v'], [28.8, '誰一人', 'v'], [31.6, '朱の空に', 'v'], [34.5, 'ただ冷ややかに', 'v'], [37.5, 'ビルの隙間に', 'v'], [40.0, '恋する様に', 'v'], [41.1, ''],
+    [43.2, '見惚れてたいの', 'v'], [44.6, 'いなくなってしまう前に', 'v'], [46.7, ''],
+    [47.3, '一方的に愛を語らせてよ', 'h'], [50.3, 'しららかな三日月', 'h'], [52.5, 'さあ僕の手を取って', 'h'], [54.3, '軽やかにステップを', 'h'], [56.1, 'あと少しだけ', 'h'],
+    [58.3, 'だけどやっぱり君は頬を膨らすのさ', 'h'], [61.9, '僕の気も知らずに', 'h'], [64.0, 'さあ僕の手を取って', 'h'], [65.9, '鮮やかにステップを', 'h'], [67.6, '夜が来るまで', 'h'], [70.4, ''],
+    [83.4, '見つめても', 'v'], [86.3, '愛しても', 'v'], [89.1, 'その肌は', 'v'], [92.1, '誰かのモノで', 'v'], [93.4, ''],
+    [94.9, '目を疑う', 'v'], [97.8, 'カゴの中', 'v'], [100.7, '売られてたんだ', 'v'], [103.6, '虫唾が走る', 'x'], [104.9, ''],
+    [106.5, 'いついつまでも', 'v'], [109.0, '片想い', 'v'], [110.3, ''], [112.3, '分かってるのに', 'v'], [113.7, '何故こんなに悔しいの?', 'v'], [115.7, ''],
+    [116.3, '一方的に君を奪われた様', 'x'], [119.3, 'そんなはずはないのに', 'x'], [121.5, 'いくら呼んだって', 'x'], [123.0, '答えてはくれないでしょう?', 'x'], [125.1, '誰の声でも', 'x'], [127.3, 'つまり', 'x'], [127.9, ''],
+    [128.6, '僕のモノでもないのさ', 'x'], [130.9, '嗚呼、粗末なアイロニー', 'x'], [133.0, 'だから君を思って泣く意味も無いのさ', 'x'], [136.6, 'でも嫌なんだ!', 'x'], [139.4, ''],
+    [142.4, '僕のモノじゃないのに', 'q'], [145.1, ''], [148.1, '僕のモノじゃないけど', 'q'],
+    [150.8, '一方的に愛を語らせてよ!', 'h'], [153.8, 'しららかな三日月', 'h'], [156.0, 'さあ僕の手を取って', 'h'], [157.8, '軽やかにステップを', 'h'], [159.6, 'あと少しだけ', 'h'], [162.4, ''],
+  ];
+  // 一句一镜：每句活到下一句（或清场）为止，跟着镜头一起冲走
+  const LINES = LY.map(([t0, s, m], i) => (s ? { t0, s, m, end: LY[i + 1] ? LY[i + 1][0] : DUR, i } : null)).filter(Boolean);
+  const CREDITS = [[1.0, 7.0, 'Hello.'], [7.0, 13.0, 'Nice to meet you !'], [13.0, 16.0, 'Vocal / Hatsune Miku'], [16.0, 19.0, 'Music / r-906'], [19.0, 24.0, '三日月ステップ'],
+    [162.9, 165.4, 'Vocal / Hatsune Miku'], [165.4, 168.2, 'Music / r-906'], [168.2, 174.0, '三日月ステップ'], [174.0, DUR + 1, 'Thank you for listening !']];
+
+  const ACCENT = /三日月|ステップ|手|愛|君|嫌|カゴ|売ら|アイロニー|片想い/g;
+  const accentMask = (s) => { const m = new Array([...s].length).fill(false); let r; ACCENT.lastIndex = 0;
+    const idx = (off) => [...s.slice(0, off)].length;
+    while ((r = ACCENT.exec(s))) { const a = idx(r.index), n = [...r[0]].length; for (let i = a; i < a + n; i++) m[i] = true; } return m; };
+  const ROT = new Set(['ー', '～', '…', '（', '）', '「', '」']);
+  const charK = (t, t0, i, n, span) => clamp((t - t0 - (i / Math.max(1, n)) * span) / 0.18);
+  // 换句时字跟着冲刺一起甩走：返回 [dx, 透明度]
+  const leave = (L, t, dir) => { const d = dashD(L.end - L.t0), u = Math.pow(ramp(t, L.end - d, L.end), 4); return [dir * u * 900, 1 - u]; };
+
+  function lyricV(g, pal, L, t, v) {
+    const cs = [...L.s], n = cs.length, fs = 58, lh = fs * 1.12, side = L.i % 2 ? -1 : 1;
+    const x = clamp(v[6] + side * (v[8] + 260), 170, W - 170), y0 = clamp(v[7] - 140, 120, H - 120 - lh * n) + (t - L.t0) * 6;
+    const [dx, a] = leave(L, t, side), acc = accentMask(L.s), span = Math.min(0.9, (L.end - L.t0) * 0.4);
+    g.save(); g.font = `600 ${fs}px ${SERIF}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.strokeStyle = rgb(pal.acc, 0.7 * a); g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(x + dx + fs * 0.85, y0 - 20); g.lineTo(x + dx + fs * 0.85, y0 - 20 + lh * n * oc(ramp(t, L.t0, L.t0 + span + 0.2))); g.stroke();
+    cs.forEach((c, i) => {
+      const k = charK(t, L.t0, i, n, span);
+      if (k <= 0) return;
+      g.globalAlpha = k * a; g.fillStyle = acc[i] ? rgb(pal.acc) : rgb(pal.txt);
+      g.save(); g.translate(x + dx, y0 + i * lh - (1 - oc(k)) * 30);
+      if (ROT.has(c)) g.rotate(Math.PI / 2); if ('、。'.includes(c)) g.translate(fs * 0.35, -fs * 0.35);
+      g.fillText(c, 0, 0); g.restore();
+    });
+    g.restore();
+  }
+  function lyricH(g, pal, L, t) {
+    const cs = [...L.s], n = cs.length, fs = n > 12 ? 92 : n > 8 ? 112 : 132, align = L.i % 2 ? 1 : -1;
+    const [dx, a] = leave(L, t, -align), y = 930 - (t - L.t0) * 8;
+    g.save(); g.font = `800 ${fs}px ${JP}`; g.textBaseline = 'alphabetic'; g.textAlign = 'center';
+    const ws = cs.map((c) => g.measureText(c).width), tw = ws.reduce((p, q) => p + q, 0);
+    let x = (align > 0 ? 140 : W - 140 - tw) + dx;
+    const acc = accentMask(L.s), span = Math.min(BEAT * 4, (L.end - L.t0) * 0.5);
+    const bar = oc(ramp(t, L.t0 - 0.05, L.t0 + 0.35));
+    g.fillStyle = rgb(pal.acc, 0.9 * a); const bw = (tw + 60) * bar; g.fillRect(align > 0 ? x - 30 : x + tw + 30 - bw, y + fs * 0.12, bw, fs * 0.1);
+    cs.forEach((c, i) => {
+      const k = charK(t, L.t0, i, n, span);
+      if (k > 0) {
+        const b = ob(k);
+        g.globalAlpha = clamp(k * 3) * a;
+        g.save(); g.translate(x + ws[i] / 2, y + (1 - b) * fs * 0.5);
+        g.lineWidth = fs * 0.14; g.lineJoin = 'round'; g.strokeStyle = rgb(mixc(pal.top, [0, 0, 0], 0.4), 0.85); g.strokeText(c, 0, 0);
+        g.fillStyle = acc[i] ? rgb(pal.acc) : rgb(pal.txt); g.fillText(c, 0, 0); g.restore();
+      }
+      x += ws[i];
+    });
+    g.restore();
+  }
+  // 爆发段：一句一屏砸进来（放大 → 落定），锚点轮换；不抖、不色散
+  const XPOS = [[960, 300, 0], [760, 820, -0.05], [1160, 560, 0.04], [960, 760, 0], [700, 380, 0.04], [1240, 720, -0.04]];
+  function lyricX(g, pal, L, t) {
+    const cs = [...L.s], n = cs.length, [px, py, rot] = XPOS[L.i % XPOS.length];
+    const fs = Math.min(180, 1500 / n), age = t - L.t0, slam = oc(clamp(age / 0.12));
+    const [dx, a] = leave(L, t, L.i % 2 ? 1 : -1), sc = lerp(1.6, 1, slam) * (1 + 0.015 * age);
+    g.save(); g.font = `900 ${fs}px ${JP}`;
+    const ws = cs.map((c) => g.measureText(c).width), tw = ws.reduce((p, q) => p + q, 0);
+    const half = (tw / 2 + 40) * sc, cx = clamp(px, Math.min(960, half + 40), Math.max(960, W - half - 40));
+    g.translate(cx + dx, py); g.rotate(rot); g.scale(sc, sc);
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.globalAlpha = clamp(age / 0.04) * a;
+    g.fillStyle = 'rgba(10,0,4,.8)'; g.fillRect(-tw / 2 - 30, -fs * 0.62, (tw + 60) * oc(clamp(age / 0.1)), fs * 1.24);
+    const acc = accentMask(L.s); let x = -tw / 2;
+    cs.forEach((c, i) => { g.fillStyle = acc[i] ? rgb(pal.acc) : '#fff'; g.fillText(c, x + ws[i] / 2, 0); x += ws[i]; });
+    g.restore();
+  }
+  function lyricQ(g, pal, L, t) {
+    const k = win(t, L.t0 + 0.2, L.end - 0.3, 0.6);
+    if (k <= 0) return;
+    g.save(); g.globalAlpha = k; g.font = `500 34px ${SERIF}`; g.textAlign = 'center'; g.fillStyle = rgb(pal.txt);
+    g.fillText(L.s, 960, 900); g.restore();
+  }
+  function lyrics(g, pal, v, t) {
+    for (const L of LINES) {
+      if (t < L.t0 || t > L.end) continue;
+      if (L.m === 'v') lyricV(g, pal, L, t, v);
+      else if (L.m === 'h') lyricH(g, pal, L, t);
+      else if (L.m === 'x') lyricX(g, pal, L, t);
+      else lyricQ(g, pal, L, t);
+    }
+  }
+  function credits(g, t) {
+    for (const [a, b, s] of CREDITS) {
+      const k = win(t, a + 0.35, b - 0.35, 0.35);
+      if (k <= 0) continue;
+      g.save(); g.globalAlpha = k * clamp(whiteK(t)); g.font = `400 26px ${SERIF}`; g.textAlign = 'center'; g.fillStyle = '#8a8a8a';
+      g.fillText(s, 960, 690); g.restore();
+    }
+  }
+
+  // ---- 一帧 ----
+  function scene(g, t) {
+    const pal = palAt(t), v = shotAt(t), c = camOf(v), [sx, sy] = shakeAt(t), wk = clamp(whiteK(t));
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1;
+    g.translate(W / 2 + sx, H / 2 + sy); g.rotate(c.roll); g.translate(-W / 2, -H / 2);
+    sky(g, pal, c);
+    stars(g, pal, v);
+    moon(g, pal, v, t, sliceAt(t));
+    echoes(g, pal, v, t);
+    city(g, pal, c, t);
+    boku(g, pal, c, t);
+    cage(g, pal, v, t);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    lyrics(g, pal, v, t);
+    if (wk > 0) {
+      g.fillStyle = `rgba(250,250,248,${wk})`; g.fillRect(0, 0, W, H);
+      rings(g, t); credits(g, t);
+      const ma = moonA(t);
+      if (ma > 0) { g.globalAlpha = ma * wk; moon(g, WHITE, v, t); g.globalAlpha = 1; }
+    }
+    const fl = t >= 127.9 ? Math.exp(-(t - 127.9) * 5) : 0;
+    if (fl > 0.004) { g.fillStyle = `rgba(255,255,255,${fl})`; g.fillRect(0, 0, W, H); }
+    const vg = g.createRadialGradient(W / 2, H / 2, H * 0.45, W / 2, H / 2, H * 1.05);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(0,0,0,${0.45 * (1 - wk)})`);
+    g.fillStyle = vg; g.fillRect(0, 0, W, H);
+  }
+  // 画面里最快的东西这一帧走了多少像素（镜头、月、僕）
+  function speed(t) {
+    const a = shotAt(t), b = shotAt(t - SHUT), p = bokuAt(t), pa = proj(p[0], p[1], p[2], camOf(a)), pb = proj(p[0], p[1], p[2], camOf(b));
+    let d = Math.max(Math.hypot(a[6] - b[6], a[7] - b[7]) + Math.abs(a[8] - b[8]), Math.abs(a[5] - b[5]), Math.abs(a[4] - b[4]) * 1000);
+    if (pa && pb) d = Math.max(d, Math.hypot(pa[0] - pb[0], pa[1] - pb[1]));
+    return d;
+  }
+  // 运动模糊：快门 1/60s 内多次采样取平均；静止或慢滑时只画一次，保持清晰
+  const sc = Object.assign(document.createElement('canvas'), { width: W, height: H }), sg = sc.getContext('2d');
+  function frame(g, t) {
+    const d = speed(t), n = d < 4 ? 1 : Math.min(24, Math.ceil(d / 6) + 1);
+    if (n === 1) { scene(g, t); return; }
+    for (let i = 0; i < n; i++) {
+      scene(sg, t - (SHUT * i) / (n - 1));
+      g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1 / (i + 1); g.drawImage(sc, 0, 0);
+    }
+    g.globalAlpha = 1;
+  }
+
+  await createVideo({
+    width: W, height: H, fps: 30,
+    background: null, progress: false, camera: { drift: 0 },
+    music: { src: 'assets/song.mp3', volume: 1, fadeIn: 0, fadeOut: 0, loop: false },
+    chapters: [{
+      id: 'mikazuki', title: '三日月ステップ', dur: DUR, rhythm: 'dense',
+      html: `<canvas class="mk-cv" width="${W}" height="${H}"></canvas>`,
+      build(tl, el) {
+        const g = el.querySelector('.mk-cv').getContext('2d');
+        tl.add((lt, t) => frame(g, t), { at: 0, label: 'pv' });
+      },
+    }],
+  });
+</script>
+</body>
+</html>

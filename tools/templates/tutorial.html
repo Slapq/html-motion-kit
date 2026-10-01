@@ -5,7 +5,7 @@
   <title>__TITLE__</title>
   <link rel="stylesheet" href="../../engine/base.css">
   <style>
-    /* 类名按章节命名空间，别跨章节重名（docs/lessons.md §2.5） */
+    /* 类名按章节命名空间，别跨章节重名（docs/lessons.md §2） */
     .wrap { position: absolute; left: 160px; right: 160px; top: 0; bottom: 150px; display: flex; flex-direction: column; justify-content: center; }
     .wrap.mid { align-items: center; text-align: center; }
     .goal { position: absolute; left: 160px; top: 96px; padding: 12px 24px; border-radius: 999px; background: #fff; border: 1px solid var(--line); font-size: 26px; color: var(--muted); }
@@ -27,7 +27,7 @@
 <script type="module">
   import { createVideo, fx } from '../../engine/index.js';
 
-  // 教程骨架：光标是贯穿全片的主线（docs/lessons.md §3.4）。
+  // 教程骨架：光标是贯穿全片的主线。
   //   1. 交接：.goal 带 data-carry="goal"，每个章节都有一份 → 在交界处飞到新位置，不是整屏换掉。
   //   2. 因果：每个变化前都有光标动作（点输入框 → 开始打字；点按钮 → 结果出现）。
   //   3. 停顿：点击/结果之后留 0.4–1s 不再加动作（背景和镜头照常漂移）。

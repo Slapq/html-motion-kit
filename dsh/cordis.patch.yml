@@ -1,14 +1,14 @@
-# HTML Motion Kit bundle patch for DeepSeek Harness (the `dsh.bundle.patch` manifest field).
+# Kinema bundle patch for DeepSeek Harness (the `dsh.bundle.patch` manifest field).
 # Activate with:
-#   dsh plugin --profile web add link:<path-to>/html-motion-kit
+#   dsh plugin --profile web add link:<path-to>/kinema
 #
-# Registers the `html-motion-kit` skill and four tools:
-#   motion_info / motion_new / motion_still / motion_render
+# Registers the `kinema` skill and six tools:
+#   motion_info / motion_new / motion_audit / motion_pacing / motion_still / motion_render
 # Config:
-#   root        (default: this package)  HTML Motion Kit root; projects live in <root>/projects
+#   root        (default: this package)  Kinema root; projects live in <root>/projects
 #   timeoutSec  1800                     per-command timeout for new/still/render
 - insert:
-    - id: html-motion-kit
-      name: 'html-motion-kit'
+    - id: kinema
+      name: 'kinema'
       config:
         timeoutSec: 1800
