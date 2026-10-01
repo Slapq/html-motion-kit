@@ -144,6 +144,19 @@ g.add([
 
 `createVideo({ props })` 给默认值，可被 `?props=<json>` 或 `render --props file.json` 覆盖；html 和 graph 中用 `{{name}}`，代码中用 `ctx.props`。同一页面换数据批量出片。
 
+## 图片素材
+
+可选。新建模板不生成图片也能预览。
+
+```bash
+npm run img -- --manifest projects/my-video/assets.json                    # 按清单批量生成，已存在的跳过（--force 重生成）
+npm run img -- --prompt "…" --out projects/my-video/assets/hero.png        # 单张，可加 --size 1536x1024 --quality high --transparent
+npm run img -- --edit base.png --prompt "…" --out projects/my-video/assets/eyes-closed.png   # 从基础角色图派生部件或表情
+```
+
+- 环境变量：`OPENAI_API_KEY`（必填）、`OPENAI_BASE_URL`（中转网关，默认官方）、`IMAGE_MODEL`（默认 `gpt-image-2.5-sunburst`）。密钥只从环境变量读取。
+- 清单格式：`{ "defaults": { size, quality }, "images": [{ "out": "assets/bg.png", "prompt": "…", "edit": ["assets/char.png"] }] }`，路径相对清单文件。
+
 ## TouchDesigner 预渲染序列
 
 TouchDesigner 不能被浏览器逐帧驱动，所以走预渲染：

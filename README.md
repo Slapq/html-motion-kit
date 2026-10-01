@@ -57,7 +57,9 @@ npm run serve          # 打开 http://127.0.0.1:5173/projects/my-video/
 npm run render -- projects/my-video
 ```
 
-需要 Node.js 20+、Chrome 或 Edge、PATH 中的 `ffmpeg`。
+需要 Node.js 20+、Chrome 或 Edge（或用 `CHROME_PATH` 指定）、PATH 中的 `ffmpeg`。
+
+生成图片素材是可选的，新建的模板不生图也能直接预览。要用的话设好 `OPENAI_API_KEY` 再跑 `npm run img`，见 [参考手册](docs/reference.md#图片素材)。
 
 然后把 Agent 指向这个仓库，告诉它你要什么：
 
